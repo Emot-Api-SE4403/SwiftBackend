@@ -85,12 +85,12 @@ async def login_for_access_token(form_data: schema.UserLoginForm, db: Session = 
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/users/me/", response_model=schema.Mentor)
-async def read_users_me(current_user_id: int = Depends(auth.get_token_data)):
+async def read_users_me(token_data: schema.TokenData = Depends(auth.get_token_data)):
     """
     kalo mau dipake harus tambahin header "Authorization" (tanpa tanda petik) 
     dengan value "Bearer + (token dari /token)"
     """
-    current_user = crud.get_user_mentor_by_id(current_user_id)
+    current_user = crud.get_user_mentor_by_id(token_data.id)
     return current_user
 
 @app.post("/users/register/mentor")
