@@ -63,15 +63,11 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class TokenData(BaseModel):
-    username: Union[str, None] = None
+class UserLoginForm(BaseModel):
+    email:str
+    password: str
 
-
-class User(BaseModel): # sama dengan Mentor
-    username: str
-    email: Union[str, None] = None
-    full_name: Union[str, None] = None
-    disabled: Union[bool, None] = None
-
-class UserInDB(User): # equal to MentorAuth
-    hashed_password: str
+class MentorRegisterForm(BaseModel):
+    email:str
+    nama_lengkap: str
+    raw_password: str
