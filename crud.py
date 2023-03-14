@@ -38,3 +38,6 @@ def create_user_item(db: Session, item: schema.ItemCreate, user_id: int):
 def create_user_mentor(db: Session, mentor: schema.MentorAuth):
     # TODO hash password
     db_user_mentor = models.Mentor(email=mentor.email, hashed_password="")
+
+def get_user_mentor_by_email(db: Session, email: str):
+    return db.query(models.Mentor).filter(models.Mentor.email == email).first()
