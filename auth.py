@@ -68,7 +68,7 @@ async def get_token_data(token: str = Depends(oauth2_scheme)):
 
         if id is None:
             raise credentials_exception
-        return schema.TokenData(id)
+        return schema.TokenData(id=id)
     except JWTError:
         raise credentials_exception
 
