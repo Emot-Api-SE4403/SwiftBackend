@@ -34,3 +34,7 @@ def create_user_item(db: Session, item: schema.ItemCreate, user_id: int):
     db.commit()
     db.refresh(db_item)
     return db_item
+
+def create_user_mentor(db: Session, mentor: schema.MentorAuth):
+    # TODO hash password
+    db_user_mentor = models.Mentor(email=mentor.email, hashed_password="")

@@ -28,3 +28,12 @@ class Item(Base):
     owner_id = Column(Integer, ForeignKey("users.id"))
 
     owner = relationship("User", back_populates="items")
+
+class Mentor(Base):
+    __tablename__ = "user_mentor"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, index=True)
+    nama_lengkap = Column(String(255))
+    hashed_password =  Column(String(255))
+    is_active = Column(Boolean, default=False)

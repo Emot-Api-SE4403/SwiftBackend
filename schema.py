@@ -39,3 +39,23 @@ class User(UserBase):
 
     class Config:
         orm_mode = True
+
+
+class MentorBase(BaseModel): 
+    # Data harus wajib ada dalam object mentor
+    # Data yang ada di sini dianggap sebagai identitas suatu object
+    email: str
+    
+
+class MentorAuth(MentorBase): 
+    # data tambahan yang diperlukan ketika auth
+    # ketika digabung dengan Mentor base, isinya menjadi email dan password
+    hashed_password: str
+
+class Mentor(MentorBase):
+    # semua data sisanya dari mentor
+    # jika ada data yang ditambah di model, tambahkan juga ke sini
+    id: int
+    nama_lengkap: str
+    is_active: bool
+
