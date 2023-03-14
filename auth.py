@@ -34,7 +34,7 @@ def authenticate_user(db: Session, email: str, password: str): # dipakai
     """
     mencek jika user terdaftar di database
     """
-    user = crud.get_user_mentor_by_email(db, email )
+    user = crud.read_user_by_email(db, email )
     if not user:
         return False
     if not verify_password(password, user.hashed_password):

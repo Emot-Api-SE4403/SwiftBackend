@@ -2,12 +2,8 @@ from sqlalchemy.orm import Session
 
 import models, schema, auth
 
-
-def get_user_mentor_by_email(db: Session, email: str):
-    return db.query(models.Mentor).filter(models.Mentor.email == email).first()
-
-def get_user_mentor_by_id(db: Session, user_id: int):
-    return db.query(models.Mentor).filter(models.Mentor.id == user_id).first()
+def read_user_by_email(db: Session, email:str):
+    return db.query(models.User).first(models.User.email == email).first()
 
 def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
@@ -29,6 +25,9 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     db.commit()
     return "done"
 
+def read_user_mentor_by_id(db: Session, user_id: int):
+    return db.query(models.User, models.Mentor).join(models.Mentor).filter(models.Mentor.uid == user_id).first()
+
 def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
     db_user = models.User(
@@ -48,3 +47,6 @@ def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     db.add(db_pelajar)
     db.commit()
     return "done"
+
+def read_user_pelajar_by_id(db: Session, user_id: int):
+    return db.query(models.User, models.Pelajar).join(models.Pelajar).filter(models.Pelajar.uid == user_id).first()

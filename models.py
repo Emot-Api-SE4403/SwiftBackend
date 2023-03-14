@@ -19,15 +19,25 @@ class User(Base):
     time_updated = Column(DateTime(timezone=True), onupdate=func.now())
     is_active = Column(Boolean, default=False)
 
+    __mapper_args__ = {
+        'polymorphic_identity': 'user',
+        'polymorphic_on': id
+    }
+
+
 class Mentor(User):
-    __tablename__ = "user_mentor"
+    __tablename__ = "mentor"
 
     uid = Column(Integer, ForeignKey("user.id"), primary_key=True)
     keahlian = Column(String(255))
     Asal = Column(String(255))
     is_verified = Column(Boolean, default=False)
 
-    user_data = relationship(back_populates="user")
+    user_data = relationship("user", backref='mentor')
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'mentor',
+    }
 
 
 class Pelajar(User):
@@ -37,4 +47,8 @@ class Pelajar(User):
     asal_sekolah = Column(String(255))
     jurusan = Column(String(255))
 
-    user_data = relationship(back_populates="user")
+    user_data = relationship("user", backref='pelajar')
+
+    __mapper_args__ = {
+        'polymorphic_identity': 'pelajar',
+    }
