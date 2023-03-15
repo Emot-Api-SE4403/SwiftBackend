@@ -13,6 +13,9 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     id: int
 
+class AdminTokenData(BaseModel):
+    id: str
+
 class UserLoginForm(BaseModel):
     email:str
     password: str
@@ -41,19 +44,39 @@ class User(UserBase):
 
 class Mentor(User):
     keahlian: str
-    asal: str
+    Asal: str
     is_verified: bool
+
 
 class MentorRegisterForm(UserRegisterForm):
     keahlian: str
     asal: str
-    is_verified: bool
 
 class Pelajar(User):
     asal_sekolah: str
     jurusan: str
 
+    class Config:
+        orm_mode = True
+
 class PelajarRegisterForm(UserRegisterForm):
     asal_sekolah: str
     jurusan: str
 
+class AdminBase(BaseModel):
+    id: str
+
+class AdminLoginForm(AdminBase):
+    password: str
+
+class AdminData(AdminBase):
+    nama_lengkap: str
+    time_created: datetime
+    time_updated: datetime
+    created_by: str
+
+    class Config:
+        orm_mode = True
+
+class AdminRegisterForm(AdminData):
+    new_password: str
