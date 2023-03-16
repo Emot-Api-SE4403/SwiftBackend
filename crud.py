@@ -49,7 +49,7 @@ def create_new_admin(db: Session, user: schema.AdminRegisterForm, parent: str):
     )
     db.add(db_admin)
     db.commit()
-    db.refresh()
+    db.refresh(db_admin)
     return "done"
 
 def read_admin_by_id(db: Session, admin_id: str):
