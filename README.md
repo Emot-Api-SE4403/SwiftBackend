@@ -35,6 +35,13 @@ Instal kebutuhan
   pip install -r requirements.txt
 ```
 
+Buat file variabel lingkungan `.env` misalnya
+
+```code
+SECRET_KEY_AUTH="09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+SQL_DATABASE_URL="mysql+mysqldb://root@localhost/swift_backend?charset=utf8"
+```
+
 Mulai server
 
 ```bash
@@ -47,8 +54,12 @@ Mulai server
 Untuk menjalankan proyek ini, Anda perlu menambahkan variabel lingkungan berikut ke file .env Anda
 
 `SECRET_KEY_AUTH`
+dapat di isi dengan string hex yang didapat dari:
+```bash
+openssl rand -hex 32
+```
 
-`SQL_DATABASE_URL`
+`SQL_DATABASE_URL` dapat di isi dengan url database anda
 
 
 ## Dokumentasi API
