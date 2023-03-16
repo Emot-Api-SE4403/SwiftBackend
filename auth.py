@@ -27,7 +27,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def verify_password(plain_password, hashed_password): #dipakai
     return pwd_context.verify(plain_password, hashed_password)
 
+def check_for_valid_password(password):
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password too short")
+
+
 def get_password_hash(password): # diapakai
+    check_for_valid_password(password)
     return pwd_context.hash(password)
 
 def authenticate_user(db: Session, email: str, password: str): # dipakai
@@ -73,3 +79,32 @@ async def get_token_data(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
 
 
+def admin_auth(db: Session, id: str, password: str):
+    admin = crud.read_admin_by_id(db, id )
+    if not admin:
+        return False
+    if not verify_password(password, admin.hashed_password):
+        return False
+    return admin
+
+async def get_admin_token(token: str = Depends(oauth2_scheme)):
+    """
+    Membaca data yang ada di token
+    jika valid mereturn id yang ada dalam token
+    jika invalid akan error
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        id: str = payload.get("id")
+
+        if id is None:
+            raise credentials_exception
+        return schema.AdminTokenData(id=id)
+    except JWTError:
+        raise credentials_exception
