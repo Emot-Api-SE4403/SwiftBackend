@@ -1,7 +1,7 @@
 """
 Schema digunakan sebagai struktur data
 """
-
+from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -36,7 +36,7 @@ class User(UserBase):
     email: str
     nama_lengkap: str
     time_created: datetime
-    time_updated: datetime
+    time_updated: Optional[datetime]
     is_active: bool
 
     class Config:
@@ -55,9 +55,8 @@ class MentorRegisterForm(UserRegisterForm):
 class Pelajar(User):
     asal_sekolah: str
     jurusan: str
+    
 
-    class Config:
-        orm_mode = True
 
 class PelajarRegisterForm(UserRegisterForm):
     asal_sekolah: str
@@ -72,8 +71,8 @@ class AdminLoginForm(AdminBase):
 class AdminData(AdminBase):
     nama_lengkap: str
     time_created: datetime
-    time_updated: datetime
-    created_by: str
+    time_updated: Optional[datetime]
+    created_by: Optional[str]
 
     class Config:
         orm_mode = True

@@ -20,7 +20,7 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
 
 def read_user_mentor_by_id(db: Session, user_id: int):
     
-    return db.query(models.User, models.Mentor).join(models.Mentor).filter(models.Mentor.uid == user_id).first()
+    return db.query(models.Mentor).filter(models.Mentor.uid == user_id).first()
 
 def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
@@ -36,7 +36,7 @@ def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     return "done"
 
 def read_user_pelajar_by_id(db: Session, user_id: int):
-    return db.query(models.User, models.Pelajar).join(models.Pelajar).filter(models.Pelajar.uid == user_id).first()
+    return db.query(models.Pelajar).filter(models.Pelajar.uid == user_id).first()
 
 
 def create_new_admin(db: Session, user: schema.AdminRegisterForm, parent: str):
@@ -53,4 +53,4 @@ def create_new_admin(db: Session, user: schema.AdminRegisterForm, parent: str):
     return "done"
 
 def read_admin_by_id(db: Session, admin_id: str):
-    return db.query(models.Admin).filter(id==admin_id).first()
+    return db.query(models.Admin).filter(models.Admin.id==admin_id).first()

@@ -27,7 +27,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def verify_password(plain_password, hashed_password): #dipakai
     return pwd_context.verify(plain_password, hashed_password)
 
+def check_for_valid_password(password):
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password too short")
+
+
 def get_password_hash(password): # diapakai
+    check_for_valid_password(password)
     return pwd_context.hash(password)
 
 def authenticate_user(db: Session, email: str, password: str): # dipakai

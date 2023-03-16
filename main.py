@@ -24,7 +24,7 @@ async def home():
     """
     Home page, return hello world
     """
-    return {"message":"Hello world!"}
+    return {"detail":"Hello world!"}
 
 
 
@@ -49,6 +49,8 @@ async def read_users_pelajar(token_data: schema.TokenData = Depends(auth.get_tok
     dengan value "Bearer + (token dari /token)"
     """
     current_user = crud.read_user_pelajar_by_id(db, token_data.id)
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     return current_user
 
 @app.get("/mentor/mydata/", response_model=schema.Mentor)
@@ -58,6 +60,8 @@ async def read_users_mentor(token_data: schema.TokenData = Depends(auth.get_toke
     dengan value "Bearer + (token dari /token)"
     """
     current_user = crud.read_user_mentor_by_id(db, token_data.id)
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     return current_user
 
 @app.post("/pelajar/register/")
@@ -69,7 +73,7 @@ async def register_account_mentor(register_form: schema.PelajarRegisterForm, db:
         crud.create_user_pelajar(db,register_form);
     except IntegrityError:
         raise HTTPException(status_code = 400, detail=  "user already exists")
-    return {"details":"ok"}
+    return {"detail":"ok"}
 
 @app.post("/mentor/register/")
 async def register_account_mentor(register_form: schema.MentorRegisterForm, db: Session = Depends(get_db)):
@@ -80,7 +84,7 @@ async def register_account_mentor(register_form: schema.MentorRegisterForm, db: 
         crud.create_user_mentor(db,register_form);
     except IntegrityError:
         raise HTTPException(status_code = 400, detail=  "user already exists")
-    return {"details":"ok"}
+    return {"detail":"ok"}
 
 
 @app.post("/admin/register/")
@@ -89,11 +93,12 @@ async def register_account_admin(register_form: schema.AdminRegisterForm, db: Se
         crud.create_new_admin(db, register_form, admin_token_data.id)
     except IntegrityError:
         raise HTTPException(status_code = 400, detail=  "user already exists")
-    return{"details":"ok"}
+    return{"detail":"ok"}
 
 @app.post("/admin/login/", response_model=schema.Token)
 async def login_for_admin(form_data: schema.AdminLoginForm, db: Session = Depends(get_db)):
     admin = auth.admin_auth(db, form_data.id, form_data.password)
+    #admin = crud.read_admin_by_id(db, form_data.id)
     if not admin:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
