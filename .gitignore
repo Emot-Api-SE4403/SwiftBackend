@@ -6,3 +6,6 @@
 
 # env file
 .env
+
+# Docker file
+Dockerfile

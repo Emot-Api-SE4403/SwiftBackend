@@ -39,7 +39,7 @@ Buat file variabel lingkungan `.env` misalnya
 
 ```code
 SECRET_KEY_AUTH="09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-SQL_DATABASE_URL="mysql+mysqldb://root@localhost/swift_backend?charset=utf8"
+SQL_DATABASE_URL="mysql+pymysql://root@localhost/swift_backend?charset=utf8"
 ```
 
 Mulai server
