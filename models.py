@@ -39,6 +39,7 @@ class Pelajar(User):
     uid = Column(Integer, ForeignKey("user.id"), primary_key=True)
     asal_sekolah = Column(String(255))
     jurusan = Column(String(255))
+    is_member = Column(Boolean, default=False)
 
     user_data = relationship(User, backref='pelajar')
 

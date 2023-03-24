@@ -109,7 +109,12 @@ async def login_for_admin(form_data: schema.AdminLoginForm, db: Session = Depend
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/admin/mydata/", response_model=schema.AdminData)
-async def read_users_mentor(token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db: Session = Depends(get_db)):
+async def read_users_admin(token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db: Session = Depends(get_db)):
     current_user = crud.read_admin_by_id(db, token_data.id)
     
     return current_user
+
+@app.post("/admin/pelajar/updatemember")
+async def toggle_user_pelajar_is_member(pelajar: schema.UserBase, token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db: Session = Depends(get_db)):
+    crud.update_user_pelajar_toggle_is_member_by_email(db, pelajar.email)
+    return {"detail":"ok"}

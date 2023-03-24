@@ -55,6 +55,7 @@ class MentorRegisterForm(UserRegisterForm):
 class Pelajar(User):
     asal_sekolah: str
     jurusan: str
+    is_member: bool
     
 
 

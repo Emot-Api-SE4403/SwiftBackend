@@ -38,6 +38,10 @@ def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
 def read_user_pelajar_by_id(db: Session, user_id: int):
     return db.query(models.Pelajar).filter(models.Pelajar.uid == user_id).first()
 
+def update_user_pelajar_toggle_is_member_by_email(db: Session, user_email: str):
+    db.query(models.Pelajar).filter(models.Pelajar.email == user_email).update({models.pelajar.is_member: not models.pelajar.is_member})
+    db.commit()
+    return "success"
 
 def create_new_admin(db: Session, user: schema.AdminRegisterForm, parent: str):
     hashed_password = auth.get_password_hash(user.new_password)
