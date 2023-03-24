@@ -45,7 +45,6 @@ class User(UserBase):
 class Mentor(User):
     keahlian: str
     Asal: str
-    is_verified: bool
 
 
 class MentorRegisterForm(UserRegisterForm):

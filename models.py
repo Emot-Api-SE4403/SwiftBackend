@@ -27,7 +27,6 @@ class Mentor(User):
     uid = Column(Integer, ForeignKey("user.id"), primary_key=True)
     keahlian = Column(String(255))
     Asal = Column(String(255))
-    is_verified = Column(Boolean, default=False)
 
     user_data = relationship(User, backref='mentor')
 
