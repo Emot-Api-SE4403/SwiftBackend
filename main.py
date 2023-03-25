@@ -20,6 +20,8 @@ def get_db():
 
 app = FastAPI()
 
+
+
 @app.get("/")
 async def home():
     """
@@ -40,8 +42,29 @@ async def login_for_access_token(form_data: schema.UserLoginForm, db: Session = 
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Inactive account",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     access_token = auth.create_access_token(data={"id": user.id})
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/user/aktivasi")
+async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depends(get_db)):
+    if(id==-1 or otp == "-1"):
+        raise HTTPException(status_code=400, detail="Bad request")
+    try:
+        result = crud.read_user_by_id_filter_activation_code(db,id, otp)
+    except sqlalchemy.orm.exc.NoResultFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Something went wrong",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    crud.update_user_is_active_by_id(id)
+    return {"detail":"success"}
 
 @app.get("/pelajar/mydata/", response_model=schema.Pelajar)
 async def read_users_pelajar(token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
@@ -71,7 +94,7 @@ async def register_account_mentor(register_form: schema.PelajarRegisterForm, db:
     Membuat akun pelajar baru
     """
     try:
-        crud.create_user_pelajar(db,register_form);
+        crud.create_user_pelajar(db,register_form)
     except IntegrityError:
         raise HTTPException(status_code = 400, detail=  "user already exists")
     return {"detail":"ok"}
@@ -82,7 +105,7 @@ async def register_account_mentor(register_form: schema.MentorRegisterForm, db: 
     Membuat akun mentor baru
     """
     try:
-        crud.create_user_mentor(db,register_form);
+        crud.create_user_mentor(db,register_form)
     except IntegrityError:
         raise HTTPException(status_code = 400, detail=  "user already exists")
     return {"detail":"ok"}

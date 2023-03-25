@@ -6,6 +6,17 @@ import models, schema, auth
 def read_user_by_email(db: Session, email:str):
     return db.query(models.User).filter(models.User.email == email).first()
 
+def read_user_by_id_filter_activation_code(db: Session, id, code):
+    return db.query(models.User).filter(models.User.id == id, models.User.activation_code == code).one()
+
+def update_user_is_active_by_id(db: Session, id):
+    db_user = db.query(models.User).filter(models.User.id == id).one()
+    db_user.is_active = True
+    db_user.time_updated = datetime.datetime.now()
+    db.add(db_user)
+    db.commit()
+    return "done"
+
 def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
     db_mentor = models.Mentor(
