@@ -31,6 +31,9 @@ class UserBase(BaseModel): #sebagai id user
 class UserAuth(UserBase): # template untuk pendaftaran
     password: str
 
+class UserNewPassword(UserAuth):
+    new_password: str
+
 class User(UserBase):
     id: int
     email: str

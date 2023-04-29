@@ -23,6 +23,31 @@ def update_user_is_active_by_id(db: Session, id):
     db.commit()
     return "done"
 
+def update_user_password_by_email(db: Session, db_user: models.User, newPassword: str):
+    db_user.hashed_password = auth.get_password_hash(newPassword)
+    db_user.time_updated = datetime.datetime.now()
+    db.add(db_user)
+    db.commit()
+    return "done"
+
+def update_user_password_by_temp_password(db: Session, email: str):
+    user = read_user_by_email(db, email)
+    if not user:
+        raise Exception("Wrong email or User not found")
+
+    if not user.is_active:
+        raise Exception("Mohon aktifkan akun anda terlebih dahulu")
+
+    temp_password = secrets.token_hex(8)[:8]
+    user.hashed_password = auth.get_password_hash(temp_password)
+    user.time_updated = datetime.datetime.now()
+    db.add(user)
+    db.commit()
+
+    # TODO send notification of new password to user
+    print(temp_password)
+    return "done"
+
 def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
     activation_code = secrets.token_urlsafe(4)

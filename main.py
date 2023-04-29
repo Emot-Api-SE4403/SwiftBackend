@@ -65,6 +65,41 @@ async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depen
     crud.update_user_is_active_by_id(db, id)
     return {"detail":"success"}
 
+@app.post("/user/resetpassword")
+async def permintaan_reset_password(email:str = "", db : Session = Depends(get_db)):
+    if not email or email == "":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No email detected",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        crud.update_user_password_by_temp_password(db, email)
+        return {"detail":"Silahkan cek email anda untuk password baru anda"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+@app.post("/user/newpassword")
+async def ganti_password_baru(new_data:schema.UserNewPassword, db: Session = Depends(get_db)):
+    user = auth.authenticate_user(db, new_data.email, new_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=401,
+            detail="Inactive account",
+        )
+    crud.update_user_password_by_email(db, user, new_data.new_password)
+    return({"detail":"password changed"})
+        
+
 @app.get("/pelajar/mydata/", response_model=schema.Pelajar)
 async def read_users_pelajar(token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
     """
