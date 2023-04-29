@@ -44,14 +44,13 @@ async def login_for_access_token(form_data: schema.UserLoginForm, db: Session = 
         )
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="Inactive account",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = auth.create_access_token(data={"id": user.id})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/user/aktivasi")
+@app.get("/user/aktivasi")  
 async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depends(get_db)):
     if(id==-1 or otp == "-1"):
         raise HTTPException(status_code=400, detail="Bad request")
@@ -63,7 +62,7 @@ async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depen
             detail="Something went wrong",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    crud.update_user_is_active_by_id(id)
+    crud.update_user_is_active_by_id(db, id)
     return {"detail":"success"}
 
 @app.get("/pelajar/mydata/", response_model=schema.Pelajar)

@@ -1,7 +1,13 @@
 import datetime
+import secrets
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
+import os
 
 import models, schema, auth
+
+load_dotenv()
+DOMAIN_URL = os.getenv("DOMAIN")
 
 def read_user_by_email(db: Session, email:str):
     return db.query(models.User).filter(models.User.email == email).first()
@@ -19,15 +25,24 @@ def update_user_is_active_by_id(db: Session, id):
 
 def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
+    activation_code = secrets.token_urlsafe(4)
+    
+    
     db_mentor = models.Mentor(
         email=user.email, 
         nama_lengkap=user.nama_lengkap, 
         hashed_password=hashed_password,
+        activation_code = activation_code,
         keahlian = user.keahlian,
         Asal = user.asal
     )
     db.add(db_mentor)
     db.commit()
+    db.refresh(db_mentor)
+
+    activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(db_mentor.id) + "&otp=" + activation_code
+    # TODO Send mail with verification code
+    print(activation_string)
     return "done"
 
 def read_user_mentor_by_id(db: Session, user_id: int):
@@ -36,15 +51,23 @@ def read_user_mentor_by_id(db: Session, user_id: int):
 
 def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
+    activation_code = secrets.token_urlsafe(4)
+
     db_pelajar = models.Pelajar(
         email=user.email, 
         nama_lengkap=user.nama_lengkap, 
         hashed_password=hashed_password,
+        activation_code = activation_code,
         asal_sekolah = user.asal_sekolah,
         jurusan = user.jurusan
     )
     db.add(db_pelajar)
     db.commit()
+    db.refresh(db_pelajar)
+
+    activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(db_pelajar.id) + "&otp=" + activation_code
+    # TODO Send mail with verification code
+    print(activation_string)
     return "done"
 
 def read_user_pelajar_by_id(db: Session, user_id: int):
