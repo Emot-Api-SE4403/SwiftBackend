@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 import os
 
+
 import models, schema, auth
 
 load_dotenv()
 DOMAIN_URL = os.getenv("DOMAIN")
+
 
 def read_user_by_email(db: Session, email:str):
     return db.query(models.User).filter(models.User.email == email).first()

@@ -4,9 +4,10 @@ from fastapi import Depends, FastAPI, HTTPException, status
 import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+import boto3
 
 import crud, schema, models, auth
-from database import SessionLocal, engine
+from database import SessionLocal, engine, s3
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -143,6 +144,11 @@ async def register_account_mentor(register_form: schema.MentorRegisterForm, db: 
     except IntegrityError:
         raise HTTPException(status_code = 400, detail=  "user already exists")
     return {"detail":"ok"}
+
+@app.post("/mentor/uploadvideo")
+async def upload_video_materi_baru(token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
+    
+    return {"a":"",}
 
 
 @app.post("/admin/register/")

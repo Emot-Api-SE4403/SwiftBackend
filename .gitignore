@@ -9,3 +9,6 @@
 
 # Docker file
 Dockerfile
+
+# aws
+/.aws/
