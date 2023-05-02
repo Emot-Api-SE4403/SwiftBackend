@@ -1,13 +1,13 @@
 
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status
 import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 import boto3
 
 import crud, schema, models, auth
-from database import SessionLocal, engine, s3
+from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -146,8 +146,26 @@ async def register_account_mentor(register_form: schema.MentorRegisterForm, db: 
     return {"detail":"ok"}
 
 @app.post("/mentor/uploadvideo")
-async def upload_video_materi_baru(token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
+async def upload_video_materi_baru(
+    token_data: schema.TokenData = Depends(auth.get_token_data), 
+    file: UploadFile = File(...),
+    id_materi: int = Form(...),
+    db: Session = Depends(get_db)):
     
+    if not file.content_type.startswith('video/mp4'):
+        raise HTTPException(status_code=400, detail="File must be in MP4 format.")
+    if file.content_length > 524288000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Ukuran file terlalu besar. Maksimal ukuran file adalah {} bytes".format(524288000)
+        )
+    try:
+        data_materi = crud.read_materi_pembelajaran_by_id()
+    except:
+        HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi Pembelajaran tidak ditemukan")
+
+    
+
     return {"a":"",}
 
 

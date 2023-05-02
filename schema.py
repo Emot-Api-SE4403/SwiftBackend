@@ -84,3 +84,5 @@ class AdminRegisterForm(AdminBase):
     nama_lengkap: str
     new_password: str
     
+
+

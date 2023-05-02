@@ -1,3 +1,4 @@
+from ast import mod
 import datetime
 import secrets
 from sqlalchemy.orm import Session
@@ -123,3 +124,18 @@ def create_new_admin(db: Session, user: schema.AdminRegisterForm, parent: str):
 
 def read_admin_by_id(db: Session, admin_id: str):
     return db.query(models.Admin).filter(models.Admin.id==admin_id).first()
+
+
+def create_new_materi_pembelajaran(db: Session, nama:str, mapel:models.DaftarMapelSkolastik):
+    db_materi_pembelajaran = models.MateriPembelajaran(
+        nama = nama,
+        mapel = mapel.id,
+    )
+
+    db.add(db_materi_pembelajaran)
+    db.commit()
+    db.refresh(db_materi_pembelajaran)
+    return "done"
+
+def read_materi_pembelajaran_by_id(db:Session, id:int):
+    return db.query(models.Materi).filter(models.Materi.id == id).one()
