@@ -177,7 +177,7 @@ async def baca_daftar_materi_pembelajaran(mapel:Union[str, int], db=Depends(get_
         except KeyError:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
 
-@app.post("/mentor/uploadvideo")
+@app.post("/video/upload")
 async def upload_video_materi_baru(
     token_data: schema.TokenData = Depends(auth.get_token_data), 
     file: UploadFile = File(...),
@@ -207,8 +207,13 @@ async def upload_video_materi_baru(
     except Exception as e:
         raise HTTPException(status_code=500, detail='Something went wrong ->'+str(e))
 
-    return {"a":"",}
+    return {"detail":"ok",}
 
+@app.get("/video/download")
+async def read_video_pembelajaran(videoid:int, token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
+    metadata = crud.read_video_pembelajaran_metadata_by_id(db, videoid)
+    download_url = crud.read_video_pembelajaran_download_url_by_id(db, videoid)
+    return {"metadata":metadata, "download link":download_url}
 
 @app.post("/admin/register/")
 async def register_account_admin(register_form: schema.AdminRegisterForm, db: Session =Depends(get_db), admin_token_data = Depends(auth.get_admin_token)):

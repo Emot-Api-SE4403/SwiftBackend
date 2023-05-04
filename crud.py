@@ -200,3 +200,15 @@ def create_video_pembelajaran(db:Session, creator: int, judul: str, materi: int,
     db.add(db_video)
     db.commit()
     db.refresh(db_video)
+
+def read_video_pembelajaran_metadata_by_id(db: Session, id : int):
+    return db.query(models.VideoPembelajaran).filter_by(id = id).one()
+
+def read_video_pembelajaran_download_url_by_id(db: Session, id: int):
+    db_video = db.query(models.VideoPembelajaran).filter_by(id = id).one()
+
+    return s3.generate_presigned_url(
+        'get_object',
+        Params = {'Bucket': 'video-pembelajaran', 'Key': db_video.s3_key},
+        ExpiresIn = 10800
+    )
