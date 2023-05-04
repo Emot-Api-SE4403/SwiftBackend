@@ -7,9 +7,11 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from fastapi import Depends, HTTPException, status
+from sqlalchemy import null
 from sqlalchemy.orm import Session
 
 import crud
+import models
 import schema
 
 # to get a string like this run:
@@ -30,6 +32,16 @@ def verify_password(plain_password, hashed_password): #dipakai
 def check_for_valid_password(password):
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="Password too short")
+
+def check_if_user_is_mentor(db, id):
+    try:
+        user:models.Mentor = crud.read_user_mentor_by_id(db, id)
+        if user is None: 
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials (a)")
+        if user.Asal is None or user.Asal == null:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials (b)")
+    except Exception as e:
+        raise HTTPException(status_code = 401, detail="Invalid authentication credentials -> "+str(e))
 
 
 def get_password_hash(password): # diapakai

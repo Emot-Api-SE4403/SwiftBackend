@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse
 import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import NoResultFound
 
 import crud, schema, models, auth
 from database import SessionLocal, engine
@@ -55,7 +56,7 @@ async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depen
         raise HTTPException(status_code=400, detail="Bad request")
     try:
         result = crud.read_user_by_id_filter_activation_code(db,id, otp)
-    except sqlalchemy.orm.exc.NoResultFound:
+    except NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Something went wrong",
@@ -145,12 +146,7 @@ async def register_account_mentor(register_form: schema.MentorRegisterForm, db: 
 
 @app.post("/materi/tambah")
 async def buat_materi_pembelajaran_baru(materi_baru: schema.schema_pembuatan_materi_pembelajaran_baru, token_data:schema.TokenData = Depends(auth.get_token_data), db = Depends(get_db)):
-    try:
-        user = crud.read_user_mentor_by_id(db, token_data.id)
-        if user is None or user.Asal is None: 
-            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-    except Exception as e:
-        raise HTTPException(status_code = 401, detail="Invalid authentication credentials")
+    auth.check_if_user_is_mentor(db, token_data.id)
     
     try:
         if isinstance(materi_baru.mapel, int):
@@ -186,8 +182,13 @@ async def upload_video_materi_baru(
     token_data: schema.TokenData = Depends(auth.get_token_data), 
     file: UploadFile = File(...),
     id_materi: int = Form(...),
+    judul_video: str = Form(...),
     db: Session = Depends(get_db)):
     
+    # Check jika user adalah mentor
+    auth.check_if_user_is_mentor(db, token_data.id)
+
+    # check jika video valid
     if not file.content_type.startswith('video/mp4'):
         raise HTTPException(status_code=400, detail="File must be in MP4 format.")
     if file.size > 524288000:
@@ -195,12 +196,16 @@ async def upload_video_materi_baru(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Ukuran file terlalu besar. Maksimal ukuran file adalah {} bytes".format(524288000)
         )
-    try:
-        data_materi = crud.read_materi_pembelajaran_by_id(db, id_materi)
-    except:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi Pembelajaran tidak ditemukan")
-
     
+    # check jika id materi valid
+    try:
+        crud.read_materi_pembelajaran_by_id(db, id_materi)
+        crud.create_video_pembelajaran(db, token_data.id, judul_video, id_materi, file)
+
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi Pembelajaran tidak ditemukan")
+    except:
+        raise HTTPException(status_code=500, detail='Something went wrong')
 
     return {"a":"",}
 
@@ -236,7 +241,7 @@ async def read_users_admin(token_data: schema.AdminTokenData = Depends(auth.get_
 async def toggle_user_pelajar_is_member(pelajar: schema.UserBase, token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db: Session = Depends(get_db)):
     try:
         crud.update_user_pelajar_toggle_is_member_by_email(db, pelajar.email)
-    except sqlalchemy.orm.exc.NoResultFound:
+    except NoResultFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="account not found",

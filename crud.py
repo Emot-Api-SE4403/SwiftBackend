@@ -1,12 +1,14 @@
-import datetime
+from datetime import datetime
 from typing import Union
 import secrets
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 import os
-
+from database import s3
 
 import models, schema, auth
+
 
 load_dotenv()
 DOMAIN_URL = os.getenv("DOMAIN")
@@ -73,7 +75,7 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     print(activation_string)
     return "done"
 
-async def read_user_mentor_by_id(db: Session, user_id: int):
+def read_user_mentor_by_id(db: Session, user_id: int):
     
     return db.query(models.Mentor).filter(models.Mentor.uid == user_id).one()
 
@@ -180,3 +182,21 @@ def delete_materi_pembelajaran_by_id(db: Session, id: int):
     db.query(models.Materi).filter(models.Materi.id == id).delete()
     db.commit()
     return "done"
+
+def create_video_pembelajaran(db:Session, creator: int, judul: str, materi: int, file: UploadFile):
+    db_video = models.VideoPembelajaran(
+        creator_id= creator,
+        judul=judul,
+        id_materi = materi,
+        s3_key = str(creator)+datetime.now().strftime("/%Y/%m/%d/")+file.filename
+    )
+
+    contents = file.file.read()
+    file.file.seek(0)
+    # Upload the file to to your S3 service
+    s3.upload_fileobj(file.file,"video-pembelajaran", db_video.s3_key)
+    file.file.close()
+
+    db.add(db_video)
+    db.commit()
+    db.refresh(db_video)

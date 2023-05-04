@@ -84,7 +84,7 @@ class VideoPembelajaran(Base):
     judul = Column(String(255), nullable=False)
     id_materi = Column(Integer, ForeignKey("materi_pembelajaran.id"))
 
-    s3_references = Column(String(255), nullable=False)
+    s3_key = Column(String(255))
 
     # Relation
     creator = relationship(Mentor, backref="video_pembelajaran")
