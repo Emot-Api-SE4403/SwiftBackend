@@ -69,7 +69,7 @@ class Materi(Base):
     __tablename__ = "materi_pembelajaran"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    nama = Column(String(255))
+    nama = Column(String(255), unique=True) 
     mapel = Column(Enum(DaftarMapelSkolastik))
 
 class VideoPembelajaran(Base):

@@ -1,5 +1,5 @@
-from ast import mod
 import datetime
+from typing import Union
 import secrets
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
@@ -73,9 +73,9 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     print(activation_string)
     return "done"
 
-def read_user_mentor_by_id(db: Session, user_id: int):
+async def read_user_mentor_by_id(db: Session, user_id: int):
     
-    return db.query(models.Mentor).filter(models.Mentor.uid == user_id).first()
+    return db.query(models.Mentor).filter(models.Mentor.uid == user_id).one()
 
 def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
@@ -126,16 +126,57 @@ def read_admin_by_id(db: Session, admin_id: str):
     return db.query(models.Admin).filter(models.Admin.id==admin_id).first()
 
 
-def create_new_materi_pembelajaran(db: Session, nama:str, mapel:models.DaftarMapelSkolastik):
-    db_materi_pembelajaran = models.MateriPembelajaran(
-        nama = nama,
-        mapel = mapel.id,
-    )
+def create_materi_pembelajaran(db:Session, mapel: Union[str, int, models.DaftarMapelSkolastik], nama_materi: str):
+    if isinstance(mapel, int):
+        db_materi = models.MateriPembelajaran(
+            nama = nama_materi,
+            mapel = models.DaftarMapelSkolastik(mapel),
+        )
+    elif isinstance(mapel, models.DaftarMapelSkolastik):
+        db_materi = models.MateriPembelajaran(
+            nama = nama_materi,
+            mapel = mapel,
+        )
+    elif isinstance(mapel, str):   
+        db_materi = models.Materi(
+            nama = nama_materi,
+            mapel = models.DaftarMapelSkolastik[mapel]
+        )
+    else:
+        raise Exception("Unsupported type")
 
-    db.add(db_materi_pembelajaran)
+    db.add(db_materi)
     db.commit()
-    db.refresh(db_materi_pembelajaran)
-    return "done"
+    db.refresh(db_materi)
+    return db_materi
+    
 
 def read_materi_pembelajaran_by_id(db:Session, id:int):
     return db.query(models.Materi).filter(models.Materi.id == id).one()
+
+def read_materi_pembelajaran_by_mapel(db:Session,  mapel: Union[str, int, models.DaftarMapelSkolastik]):
+    if isinstance(mapel, int):
+        return db.query(models.Materi).filter(models.Materi.mapel == models.DaftarMapelSkolastik(mapel)).all()
+    elif isinstance(mapel, models.DaftarMapelSkolastik):
+        return db.query(models.Materi).filter(models.Materi.mapel == mapel).all()
+    elif isinstance(mapel, str):   
+        return db.query(models.Materi).filter(models.Materi.mapel == models.DaftarMapelSkolastik[mapel]).all()
+    else:
+        raise Exception("Unsupported type")
+
+def update_nama_materi_pembelajaran_by_id(db: Session, id: int, mapel:str, nama_materi: str):
+    if mapel in models.DaftarMapelSkolastik.__members__:
+        mapel_value = models.DaftarMapelSkolastik[mapel].value
+    else:
+        raise Exception("invalid mapel")
+    
+    db_materi = db.query(models.Materi).filter(models.Materi.id == id).one()
+    db_materi.nama = nama_materi
+    db_materi.mapel = mapel_value
+    db.commit()
+    return "done"
+
+def delete_materi_pembelajaran_by_id(db: Session, id: int):
+    db.query(models.Materi).filter(models.Materi.id == id).delete()
+    db.commit()
+    return "done"

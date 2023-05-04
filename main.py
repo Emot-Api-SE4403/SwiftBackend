@@ -1,10 +1,11 @@
 
 
+from typing import Union
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import RedirectResponse
 import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-import boto3
 
 import crud, schema, models, auth
 from database import SessionLocal, engine
@@ -25,10 +26,7 @@ app = FastAPI()
 
 @app.get("/")
 async def home():
-    """
-    Home page, return hello world
-    """
-    return {"detail":"Hello world!"}
+    return RedirectResponse(url='/docs')
 
 
 
@@ -124,7 +122,7 @@ async def read_users_mentor(token_data: schema.TokenData = Depends(auth.get_toke
     return current_user
 
 @app.post("/pelajar/register/")
-async def register_account_mentor(register_form: schema.PelajarRegisterForm, db: Session = Depends(get_db)):
+async def register_account_pelajar(register_form: schema.PelajarRegisterForm, db: Session = Depends(get_db)):
     """
     Membuat akun pelajar baru
     """
@@ -145,6 +143,44 @@ async def register_account_mentor(register_form: schema.MentorRegisterForm, db: 
         raise HTTPException(status_code = 400, detail=  "user already exists")
     return {"detail":"ok"}
 
+@app.post("/materi/tambah")
+async def buat_materi_pembelajaran_baru(materi_baru: schema.schema_pembuatan_materi_pembelajaran_baru, token_data:schema.TokenData = Depends(auth.get_token_data), db = Depends(get_db)):
+    try:
+        user = crud.read_user_mentor_by_id(db, token_data.id)
+        if user is None or user.Asal is None: 
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+    except Exception as e:
+        raise HTTPException(status_code = 401, detail="Invalid authentication credentials")
+    
+    try:
+        if isinstance(materi_baru.mapel, int):
+            if materi_baru.mapel > 6 or materi_baru.mapel < 1:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
+            crud.create_materi_pembelajaran(db, materi_baru.mapel, materi_baru.nama_materi)          
+        elif isinstance(materi_baru.mapel, str):
+            try:
+                crud.create_materi_pembelajaran(db, materi_baru.mapel, materi_baru.nama_materi)
+            except KeyError:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
+
+        return{"detail":"ok"}
+    except IntegrityError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi sudah ada")
+
+
+@app.get("/materi/daftar")
+async def baca_daftar_materi_pembelajaran(mapel:Union[str, int], db=Depends(get_db)):
+    try:
+        mapel = int(mapel)
+        if mapel > 6 or mapel < 1:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
+        return crud.read_materi_pembelajaran_by_mapel(db, mapel)
+    except ValueError:
+        try:
+            return crud.read_materi_pembelajaran_by_mapel(db, mapel)
+        except KeyError:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
+
 @app.post("/mentor/uploadvideo")
 async def upload_video_materi_baru(
     token_data: schema.TokenData = Depends(auth.get_token_data), 
@@ -154,15 +190,15 @@ async def upload_video_materi_baru(
     
     if not file.content_type.startswith('video/mp4'):
         raise HTTPException(status_code=400, detail="File must be in MP4 format.")
-    if file.content_length > 524288000:
+    if file.size > 524288000:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Ukuran file terlalu besar. Maksimal ukuran file adalah {} bytes".format(524288000)
         )
     try:
-        data_materi = crud.read_materi_pembelajaran_by_id()
+        data_materi = crud.read_materi_pembelajaran_by_id(db, id_materi)
     except:
-        HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi Pembelajaran tidak ditemukan")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi Pembelajaran tidak ditemukan")
 
     
 
