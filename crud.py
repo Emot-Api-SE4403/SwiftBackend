@@ -188,7 +188,7 @@ def create_video_pembelajaran(db:Session, creator: int, judul: str, materi: int,
         creator_id= creator,
         judul=judul,
         id_materi = materi,
-        s3_key = str(creator)+datetime.now().strftime("/%Y/%m/%d/")+file.filename
+        s3_key = str(creator)+datetime.now().strftime("/%Y/%m/%d/%S%f_")+file.filename
     )
 
     contents = file.file.read()

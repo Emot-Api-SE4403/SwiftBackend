@@ -204,8 +204,8 @@ async def upload_video_materi_baru(
 
     except NoResultFound:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi Pembelajaran tidak ditemukan")
-    except:
-        raise HTTPException(status_code=500, detail='Something went wrong')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail='Something went wrong ->'+str(e))
 
     return {"a":"",}
 
