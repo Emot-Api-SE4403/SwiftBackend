@@ -152,6 +152,8 @@ def create_materi_pembelajaran(db:Session, mapel: Union[str, int, models.DaftarM
     db.refresh(db_materi)
     return db_materi
     
+def read_materi_pembelajaran_all_data(db: Session):
+    return db.query(models.Materi).all()
 
 def read_materi_pembelajaran_by_id(db:Session, id:int):
     return db.query(models.Materi).filter(models.Materi.id == id).one()
@@ -166,22 +168,22 @@ def read_materi_pembelajaran_by_mapel(db:Session,  mapel: Union[str, int, models
     else:
         raise Exception("Unsupported type")
 
-def update_nama_materi_pembelajaran_by_id(db: Session, id: int, mapel:str, nama_materi: str):
-    if mapel in models.DaftarMapelSkolastik.__members__:
-        mapel_value = models.DaftarMapelSkolastik[mapel].value
-    else:
-        raise Exception("invalid mapel")
+def update_materi_pembelajaran_by_id(db: Session, id: int, mapel:Union[str,int], nama_materi: str):
     
     db_materi = db.query(models.Materi).filter(models.Materi.id == id).one()
     db_materi.nama = nama_materi
-    db_materi.mapel = mapel_value
+    if isinstance(mapel, int):
+        db_materi.mapel = models.DaftarMapelSkolastik(mapel)
+    else:
+        db_materi.mapel = models.DaftarMapelSkolastik[mapel]
     db.commit()
-    return "done"
+    db.refresh(db_materi)
+    return db_materi
 
 def delete_materi_pembelajaran_by_id(db: Session, id: int):
-    db.query(models.Materi).filter(models.Materi.id == id).delete()
+    hasil = db.query(models.Materi).filter(models.Materi.id == id).delete()
     db.commit()
-    return "done"
+    return hasil
 
 def create_video_pembelajaran(db:Session, creator: int, judul: str, materi: int, file: UploadFile):
     db_video = models.VideoPembelajaran(
