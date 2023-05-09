@@ -1,17 +1,20 @@
 from typing import Union
+
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+
 import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
+import uvicorn
 
-import crud, schema, models, auth
+import crud, schema, models, auth, analytics
 from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
-
+load_dotenv()
 
 
 # Dependency
@@ -330,3 +333,4 @@ async def delete_materi_menggunakan_id(id:int, _ : schema.AdminTokenData=Depends
     except:
         raise HTTPException(500, "something went wrong")
     
+analytics.load_main_analytics(app)
