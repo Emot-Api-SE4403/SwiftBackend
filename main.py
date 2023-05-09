@@ -109,8 +109,31 @@ async def ganti_password_baru(new_data:schema.UserNewPassword, db: Session = Dep
     crud.update_user_password_by_email(db, user, new_data.new_password)
     return({"detail":"password changed"})
         
+@app.post("/mentor/updateprofilepicture")
+@app.post("/pelajar/updateprofilepicture")
+async def update_profile_picture(
+    file: UploadFile = File(...), 
+    token_data:schema.TokenData = Depends(auth.get_token_data), 
+    db: Session = Depends(get_db)):
+    
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    if file.size > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Ukuran file terlalu besar. Maksimal ukuran file adalah {} bytes".format(5 * 1024 * 1024)
+        )
+    try:
+        crud.update_user_profile_picture_by_id(db, file, token_data.id)
+    except Exception as e:
+        raise HTTPException(500, detail='Something went wrong, details: '+str(e))
+    return {
+        'detail':'ok'
+    }
 
-@app.get("/pelajar/mydata/", response_model=schema.Pelajar)
+
+
+@app.get("/pelajar/mydata", response_model=schema.Pelajar)
 async def read_users_pelajar(token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
     """
     kalo mau dipake harus tambahin header "Authorization" (tanpa tanda petik) 
@@ -121,7 +144,7 @@ async def read_users_pelajar(token_data: schema.TokenData = Depends(auth.get_tok
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     return current_user
 
-@app.get("/mentor/mydata/", response_model=schema.Mentor)
+@app.get("/mentor/mydata", response_model=schema.Mentor)
 async def read_users_mentor(token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
     """
     kalo mau dipake harus tambahin header "Authorization" (tanpa tanda petik) 
@@ -132,7 +155,7 @@ async def read_users_mentor(token_data: schema.TokenData = Depends(auth.get_toke
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     return current_user
 
-@app.post("/pelajar/register/")
+@app.post("/pelajar/register")
 async def register_account_pelajar(register_form: schema.PelajarRegisterForm, db: Session = Depends(get_db)):
     """
     Membuat akun pelajar baru
@@ -143,7 +166,7 @@ async def register_account_pelajar(register_form: schema.PelajarRegisterForm, db
         raise HTTPException(status_code = 400, detail=  "user already exists")
     return {"detail":"ok"}
 
-@app.post("/mentor/register/")
+@app.post("/mentor/register")
 async def register_account_mentor(register_form: schema.MentorRegisterForm, db: Session = Depends(get_db)):
     """
     Membuat akun mentor baru
@@ -225,7 +248,7 @@ async def read_video_pembelajaran(videoid:int, token_data: schema.TokenData = De
     download_url = crud.read_video_pembelajaran_download_url_by_id(db, videoid)
     return {"metadata":metadata, "download link":download_url}
 
-@app.post("/admin/register/")
+@app.post("/admin/register")
 async def register_account_admin(register_form: schema.AdminRegisterForm, db: Session =Depends(get_db), admin_token_data = Depends(auth.get_admin_token)):
     try:
         crud.create_new_admin(db, register_form, admin_token_data.id)
@@ -233,7 +256,7 @@ async def register_account_admin(register_form: schema.AdminRegisterForm, db: Se
         raise HTTPException(status_code = 400, detail=  "user already exists")
     return{"detail":"ok"}
 
-@app.post("/admin/login/", response_model=schema.Token)
+@app.post("/admin/login", response_model=schema.Token)
 async def login_for_admin(form_data: schema.AdminLoginForm, db: Session = Depends(get_db)):
     admin = auth.admin_auth(db, form_data.id, form_data.password)
     #admin = crud.read_admin_by_id(db, form_data.id)
@@ -246,7 +269,7 @@ async def login_for_admin(form_data: schema.AdminLoginForm, db: Session = Depend
     access_token = auth.create_access_token(data={"id": admin.id})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/admin/mydata/", response_model=schema.AdminData)
+@app.get("/admin/mydata", response_model=schema.AdminData)
 async def read_users_admin(token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db: Session = Depends(get_db)):
     current_user = crud.read_admin_by_id(db, token_data.id)
     

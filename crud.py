@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from typing import Union
 import secrets
 from fastapi import UploadFile
@@ -34,6 +34,15 @@ def update_user_password_by_email(db: Session, db_user: models.User, newPassword
     db.add(db_user)
     db.commit()
     return "done"
+
+def update_user_profile_picture_by_id(db: Session, new_profile_picture: UploadFile, id: int):
+    db_user = db.query(models.User).filter(models.User.id == id).one()
+    db_user.time_updated = datetime.datetime.now()
+    key:str = str(db_user.id)+'-'+db_user.time_updated.strftime("%Y%m%d%S") + '-' + new_profile_picture.filename
+    db_user.profile_picture = os.getenv('S3_URL')+'/profile-picture/'+key
+
+    s3.upload_fileobj(new_profile_picture.file, 'profile-picture', str(key))
+    db.commit()
 
 def update_user_password_by_temp_password(db: Session, email: str):
     user = read_user_by_email(db, email)
@@ -190,7 +199,7 @@ def create_video_pembelajaran(db:Session, creator: int, judul: str, materi: int,
         creator_id= creator,
         judul=judul,
         id_materi = materi,
-        s3_key = str(creator)+datetime.now().strftime("/%Y/%m/%d/%S%f_")+file.filename
+        s3_key = str(creator)+datetime.datetime.now().strftime("/%Y/%m/%d/%S%f_")+file.filename
     )
 
     contents = file.file.read()

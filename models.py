@@ -1,7 +1,7 @@
 """
 Models digunakan sebagai table database
 """
-
+import os
 import enum
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, func, Enum
 from sqlalchemy.orm import relationship, backref
@@ -16,6 +16,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True)
     nama_lengkap = Column(String(255))
     hashed_password =  Column(String(255))
+    profile_picture = Column(String(255), default=os.getenv('S3_URL')+'/profile-picture/default.png')
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     time_updated = Column(DateTime(timezone=True), onupdate=func.now())
     is_active = Column(Boolean, default=False)
