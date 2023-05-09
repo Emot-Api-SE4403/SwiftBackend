@@ -2,7 +2,8 @@
 Models digunakan sebagai table database
 """
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, func
+import enum
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, func, Enum
 from sqlalchemy.orm import relationship, backref
 
 from database import Base
@@ -31,8 +32,6 @@ class Mentor(User):
 
     user_data = relationship(User, backref='mentor')
 
-
-
 class Pelajar(User):
     __tablename__ = "pelajar"
 
@@ -56,3 +55,37 @@ class Admin(Base):
 
     # One-to-Many relationship
     children = relationship("Admin", backref=backref('admin', remote_side=[id]))
+
+
+class DaftarMapelSkolastik(enum.Enum):
+    kuantitatif = 1
+    penalaran_matematika = 2
+    literasi_inggris = 3
+    literasi_indonesia = 4
+    penalaran_umum = 5
+    membaca_dan_menulis = 6
+
+class Materi(Base):
+    __tablename__ = "materi_pembelajaran"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    nama = Column(String(255), unique=True) 
+    mapel = Column(Enum(DaftarMapelSkolastik))
+
+class VideoPembelajaran(Base):
+    __tablename__ = "video_pembelajaran"
+
+    # Metadata
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    creator_id = Column(Integer, ForeignKey("mentor.uid"))
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Content
+    judul = Column(String(255), nullable=False)
+    id_materi = Column(Integer, ForeignKey("materi_pembelajaran.id"))
+
+    s3_key = Column(String(255))
+
+    # Relation
+    creator = relationship(Mentor, backref="video_pembelajaran")
+    materi = relationship(Materi, backref="video_pembelajaran")

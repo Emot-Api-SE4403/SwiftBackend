@@ -1,7 +1,7 @@
 """
 Schema digunakan sebagai struktur data
 """
-from typing import Optional
+from typing import Optional, Union
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -84,3 +84,7 @@ class AdminRegisterForm(AdminBase):
     nama_lengkap: str
     new_password: str
     
+class schema_pembuatan_materi_pembelajaran_baru(BaseModel):
+    mapel: Union[str, int]
+    nama_materi: str
+

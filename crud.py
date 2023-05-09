@@ -1,13 +1,18 @@
-import datetime
+from datetime import datetime
+from typing import Union
 import secrets
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 import os
+from database import s3
 
 import models, schema, auth
 
+
 load_dotenv()
 DOMAIN_URL = os.getenv("DOMAIN")
+
 
 def read_user_by_email(db: Session, email:str):
     return db.query(models.User).filter(models.User.email == email).first()
@@ -72,7 +77,7 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
 
 def read_user_mentor_by_id(db: Session, user_id: int):
     
-    return db.query(models.Mentor).filter(models.Mentor.uid == user_id).first()
+    return db.query(models.Mentor).filter(models.Mentor.uid == user_id).one()
 
 def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
@@ -121,3 +126,91 @@ def create_new_admin(db: Session, user: schema.AdminRegisterForm, parent: str):
 
 def read_admin_by_id(db: Session, admin_id: str):
     return db.query(models.Admin).filter(models.Admin.id==admin_id).first()
+
+
+def create_materi_pembelajaran(db:Session, mapel: Union[str, int, models.DaftarMapelSkolastik], nama_materi: str):
+    if isinstance(mapel, int):
+        db_materi = models.MateriPembelajaran(
+            nama = nama_materi,
+            mapel = models.DaftarMapelSkolastik(mapel),
+        )
+    elif isinstance(mapel, models.DaftarMapelSkolastik):
+        db_materi = models.MateriPembelajaran(
+            nama = nama_materi,
+            mapel = mapel,
+        )
+    elif isinstance(mapel, str):   
+        db_materi = models.Materi(
+            nama = nama_materi,
+            mapel = models.DaftarMapelSkolastik[mapel]
+        )
+    else:
+        raise Exception("Unsupported type")
+
+    db.add(db_materi)
+    db.commit()
+    db.refresh(db_materi)
+    return db_materi
+    
+def read_materi_pembelajaran_all_data(db: Session):
+    return db.query(models.Materi).all()
+
+def read_materi_pembelajaran_by_id(db:Session, id:int):
+    return db.query(models.Materi).filter(models.Materi.id == id).one()
+
+def read_materi_pembelajaran_by_mapel(db:Session,  mapel: Union[str, int, models.DaftarMapelSkolastik]):
+    if isinstance(mapel, int):
+        return db.query(models.Materi).filter(models.Materi.mapel == models.DaftarMapelSkolastik(mapel)).all()
+    elif isinstance(mapel, models.DaftarMapelSkolastik):
+        return db.query(models.Materi).filter(models.Materi.mapel == mapel).all()
+    elif isinstance(mapel, str):   
+        return db.query(models.Materi).filter(models.Materi.mapel == models.DaftarMapelSkolastik[mapel]).all()
+    else:
+        raise Exception("Unsupported type")
+
+def update_materi_pembelajaran_by_id(db: Session, id: int, mapel:Union[str,int], nama_materi: str):
+    
+    db_materi = db.query(models.Materi).filter(models.Materi.id == id).one()
+    db_materi.nama = nama_materi
+    if isinstance(mapel, int):
+        db_materi.mapel = models.DaftarMapelSkolastik(mapel)
+    else:
+        db_materi.mapel = models.DaftarMapelSkolastik[mapel]
+    db.commit()
+    db.refresh(db_materi)
+    return db_materi
+
+def delete_materi_pembelajaran_by_id(db: Session, id: int):
+    hasil = db.query(models.Materi).filter(models.Materi.id == id).delete()
+    db.commit()
+    return hasil
+
+def create_video_pembelajaran(db:Session, creator: int, judul: str, materi: int, file: UploadFile):
+    db_video = models.VideoPembelajaran(
+        creator_id= creator,
+        judul=judul,
+        id_materi = materi,
+        s3_key = str(creator)+datetime.now().strftime("/%Y/%m/%d/%S%f_")+file.filename
+    )
+
+    contents = file.file.read()
+    file.file.seek(0)
+    # Upload the file to to your S3 service
+    s3.upload_fileobj(file.file,"video-pembelajaran", db_video.s3_key)
+    file.file.close()
+
+    db.add(db_video)
+    db.commit()
+    db.refresh(db_video)
+
+def read_video_pembelajaran_metadata_by_id(db: Session, id : int):
+    return db.query(models.VideoPembelajaran).filter_by(id = id).one()
+
+def read_video_pembelajaran_download_url_by_id(db: Session, id: int):
+    db_video = db.query(models.VideoPembelajaran).filter_by(id = id).one()
+
+    return s3.generate_presigned_url(
+        'get_object',
+        Params = {'Bucket': 'video-pembelajaran', 'Key': db_video.s3_key},
+        ExpiresIn = 10800
+    )
