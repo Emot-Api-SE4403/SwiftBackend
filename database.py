@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import os
 import boto3
 
+import analytics
+
 
 load_dotenv()
 SQLALCHEMY_DATABASE_URL = os.getenv("SQL_DATABASE_URL")
@@ -31,4 +33,5 @@ s3= boto3.client('s3',
     verify=False
 )
 
+analytics.load_database_analytics(engine)
 
