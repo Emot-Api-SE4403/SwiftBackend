@@ -30,7 +30,10 @@ def load_main_analytics(app: FastAPI) :
     )
 
 def load_database_analytics(engine):
-    Boto3SQSInstrumentor().instrument()
+    Boto3SQSInstrumentor().instrument(
+        tracer_provider=trace
+    )
     SQLAlchemyInstrumentor().instrument(
         engine=engine,
+        tracer_provider=trace
     )
