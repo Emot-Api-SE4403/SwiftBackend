@@ -8,13 +8,10 @@ import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
-import uvicorn
-
 import crud, schema, models, auth, analytics
 from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
-load_dotenv()
 
 
 # Dependency
