@@ -1,6 +1,7 @@
 from typing import Union
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -10,6 +11,8 @@ import crud, schema, models, auth
 from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
+
+
 
 # Dependency
 def get_db():
@@ -21,6 +24,15 @@ def get_db():
 
 app = FastAPI()
 
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
