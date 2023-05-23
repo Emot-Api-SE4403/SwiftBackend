@@ -16,6 +16,7 @@ from opentelemetry import trace, metrics
 from dotenv import load_dotenv
 import os
 
+load_dotenv()
 otlp_exporter = OTLPSpanExporter(endpoint=os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT"), insecure=True)
 pr_exporter = PrometheusRemoteWriteMetricsExporter(
     os.getenv("PR_EXPORTER_OTLP_ENDPOINT"),
