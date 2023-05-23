@@ -43,17 +43,17 @@ trace.get_tracer_provider().add_span_processor(span_processor)
 def load_main_analytics(app: FastAPI) :
     FastAPIInstrumentor.instrument_app(
         app,
-        tracer_provider=tracer,
-        meter_provider=meter
+        tracer_provider=trace,
+        meter_provider=metrics
     )
 
 def load_database_analytics(engine):
     Boto3SQSInstrumentor().instrument(
-        tracer_provider=tracer,
-        meter_provider=meter
+        tracer_provider=trace,
+        meter_provider=metrics
     )
     SQLAlchemyInstrumentor().instrument(
         engine=engine,
-        tracer_provider=tracer,
-        meter_provider=meter
+        tracer_provider=trace,
+        meter_provider=metrics
     )
