@@ -12,3 +12,5 @@ Dockerfile
 
 # aws
 /.aws/
+.space
+Spacefile

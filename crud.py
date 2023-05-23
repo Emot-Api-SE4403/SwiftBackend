@@ -38,10 +38,9 @@ def update_user_password_by_email(db: Session, db_user: models.User, newPassword
 def update_user_profile_picture_by_id(db: Session, new_profile_picture: UploadFile, id: int):
     db_user = db.query(models.User).filter(models.User.id == id).one()
     db_user.time_updated = datetime.datetime.now()
-    key:str = str(db_user.id)+'-'+db_user.time_updated.strftime("%Y%m%d%S") + '-' + new_profile_picture.filename
-    db_user.profile_picture = os.getenv('S3_URL')+'/profile-picture/'+key
+    db_user.profile_picture = str(db_user.id)+'-'+db_user.time_updated.strftime("%Y%m%d%S") + '-' + new_profile_picture.filename
 
-    s3.upload_fileobj(new_profile_picture.file, 'profile-picture', str(key))
+    s3.upload_fileobj(new_profile_picture.file, 'profile-picture', str(db_user.profile_picture))
     db.commit()
 
 def update_user_password_by_temp_password(db: Session, email: str):
@@ -85,9 +84,13 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     return "done"
 
 def read_user_mentor_by_id(db: Session, user_id: int):
-    
-    return db.query(models.Mentor).filter(models.Mentor.uid == user_id).one()
-
+    db_mentor = db.query(models.Mentor).filter(models.Mentor.uid == user_id).one()
+    db_mentor.profile_picture = s3.generate_presigned_url(
+        'get_object',
+        Params = {'Bucket': 'profile-picture', 'Key': db_mentor.profile_picture},
+        ExpiresIn = 86400
+    )
+    return db_mentor
 def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
     activation_code = secrets.token_urlsafe(4)
@@ -110,7 +113,13 @@ def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     return "done"
 
 def read_user_pelajar_by_id(db: Session, user_id: int):
-    return db.query(models.Pelajar).filter(models.Pelajar.uid == user_id).first()
+    db_pelajar = db.query(models.Pelajar).filter(models.Pelajar.uid == user_id).first()
+    db_pelajar.profile_picture = s3.generate_presigned_url(
+        'get_object',
+        Params = {'Bucket': 'profile-picture', 'Key': db_pelajar.profile_picture},
+        ExpiresIn = 86400
+    )
+    return db_pelajar
 
 def update_user_pelajar_toggle_is_member_by_email(db: Session, user_email: str):
     db_pelajar = db.query(models.Pelajar).filter(models.Pelajar.email == user_email).one()
