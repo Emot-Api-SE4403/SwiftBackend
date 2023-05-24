@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 from database import s3
 
-import models, schema, auth
+import models, schema, auth, email_api
 
 
 load_dotenv()
@@ -80,6 +80,7 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
 
     activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(db_mentor.id) + "&otp=" + activation_code
     # TODO Send mail with verification code
+    email_api.kirim_konfimasi_email(user.email, user.nama_lengkap, activation_string)
     print(activation_string)
     return "done"
 
@@ -109,6 +110,7 @@ def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
 
     activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(db_pelajar.id) + "&otp=" + activation_code
     # TODO Send mail with verification code
+    email_api.kirim_konfimasi_email(user.email, user.nama_lengkap, activation_string)
     print(activation_string)
     return "done"
 
