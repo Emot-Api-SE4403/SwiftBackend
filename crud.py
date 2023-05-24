@@ -58,7 +58,8 @@ def update_user_password_by_temp_password(db: Session, email: str):
     db.commit()
 
     # TODO send notification of new password to user
-    print(temp_password)
+    email_api.kirim_password_baru(user.email, user.nama_lengkap, temp_password)
+    # print(temp_password)
     return "done"
 
 def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
@@ -81,7 +82,7 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(db_mentor.id) + "&otp=" + activation_code
     # TODO Send mail with verification code
     email_api.kirim_konfimasi_email(user.email, user.nama_lengkap, activation_string)
-    print(activation_string)
+    # print(activation_string)
     return "done"
 
 def read_user_mentor_by_id(db: Session, user_id: int):
@@ -111,7 +112,7 @@ def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(db_pelajar.id) + "&otp=" + activation_code
     # TODO Send mail with verification code
     email_api.kirim_konfimasi_email(user.email, user.nama_lengkap, activation_string)
-    print(activation_string)
+    # print(activation_string)
     return "done"
 
 def read_user_pelajar_by_id(db: Session, user_id: int):
