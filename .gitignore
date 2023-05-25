@@ -3,6 +3,8 @@
 
 # Python cache
 /__pycache__
+/.pytest_cache
+/test/__pycache__
 
 # env file
 .env
@@ -10,7 +12,12 @@
 # Docker file
 Dockerfile
 
-# aws
+# cloud services
 /.aws/
 .space
 Spacefile
+
+# test file
+.coverage
+/coverage_html
+.test.env
