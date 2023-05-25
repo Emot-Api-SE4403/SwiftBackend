@@ -11,8 +11,3 @@ SQLAlchemy_Utils>=0.40.0
 PyMySQL>=1.0.2
 boto3>=1.26.124
 python-multipart>=0.0.1
-opentelemetry-instrumentation-fastapi
-opentelemetry-instrumentation-boto3sqs
-opentelemetry-instrumentation-sqlalchemy
-opentelemetry-exporter-otlp
-opentelemetry-exporter-prometheus-remote-write

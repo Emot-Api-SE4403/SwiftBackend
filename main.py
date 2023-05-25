@@ -8,7 +8,7 @@ import sqlalchemy
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
-import crud, schema, models, auth, analytics
+import crud, schema, models, auth
 from database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -374,4 +374,3 @@ async def delete_materi_menggunakan_id(id:int, _ : schema.AdminTokenData=Depends
     except:
         raise HTTPException(500, "something went wrong")
     
-analytics.load_main_analytics(app)
