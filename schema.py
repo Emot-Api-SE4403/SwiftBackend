@@ -37,6 +37,7 @@ class UserNewPassword(UserAuth):
 class User(UserBase):
     id: int
     email: str
+    profile_picture: str
     nama_lengkap: str
     time_created: datetime
     time_updated: Optional[datetime]

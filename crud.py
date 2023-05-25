@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 from typing import Union
 import secrets
 from fastapi import UploadFile
@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 from database import s3
 
-import models, schema, auth
+import models, schema, auth, email_api
 
 
 load_dotenv()
@@ -35,6 +35,14 @@ def update_user_password_by_email(db: Session, db_user: models.User, newPassword
     db.commit()
     return "done"
 
+def update_user_profile_picture_by_id(db: Session, new_profile_picture: UploadFile, id: int):
+    db_user = db.query(models.User).filter(models.User.id == id).one()
+    db_user.time_updated = datetime.datetime.now()
+    db_user.profile_picture = str(db_user.id)+'-'+db_user.time_updated.strftime("%Y%m%d%S") + '-' + new_profile_picture.filename
+
+    s3.upload_fileobj(new_profile_picture.file, 'profile-picture', str(db_user.profile_picture))
+    db.commit()
+
 def update_user_password_by_temp_password(db: Session, email: str):
     user = read_user_by_email(db, email)
     if not user:
@@ -50,7 +58,8 @@ def update_user_password_by_temp_password(db: Session, email: str):
     db.commit()
 
     # TODO send notification of new password to user
-    print(temp_password)
+    email_api.kirim_password_baru(user.email, user.nama_lengkap, temp_password)
+    # print(temp_password)
     return "done"
 
 def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
@@ -72,13 +81,18 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
 
     activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(db_mentor.id) + "&otp=" + activation_code
     # TODO Send mail with verification code
-    print(activation_string)
+    email_api.kirim_konfimasi_email(user.email, user.nama_lengkap, activation_string)
+    # print(activation_string)
     return "done"
 
 def read_user_mentor_by_id(db: Session, user_id: int):
-    
-    return db.query(models.Mentor).filter(models.Mentor.uid == user_id).one()
-
+    db_mentor = db.query(models.Mentor).filter(models.Mentor.uid == user_id).one()
+    db_mentor.profile_picture = s3.generate_presigned_url(
+        'get_object',
+        Params = {'Bucket': 'profile-picture', 'Key': db_mentor.profile_picture},
+        ExpiresIn = 86400
+    )
+    return db_mentor
 def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
     hashed_password = auth.get_password_hash(user.raw_password)
     activation_code = secrets.token_urlsafe(4)
@@ -97,11 +111,18 @@ def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
 
     activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(db_pelajar.id) + "&otp=" + activation_code
     # TODO Send mail with verification code
-    print(activation_string)
+    email_api.kirim_konfimasi_email(user.email, user.nama_lengkap, activation_string)
+    # print(activation_string)
     return "done"
 
 def read_user_pelajar_by_id(db: Session, user_id: int):
-    return db.query(models.Pelajar).filter(models.Pelajar.uid == user_id).first()
+    db_pelajar = db.query(models.Pelajar).filter(models.Pelajar.uid == user_id).first()
+    db_pelajar.profile_picture = s3.generate_presigned_url(
+        'get_object',
+        Params = {'Bucket': 'profile-picture', 'Key': db_pelajar.profile_picture},
+        ExpiresIn = 86400
+    )
+    return db_pelajar
 
 def update_user_pelajar_toggle_is_member_by_email(db: Session, user_email: str):
     db_pelajar = db.query(models.Pelajar).filter(models.Pelajar.email == user_email).one()
@@ -190,7 +211,7 @@ def create_video_pembelajaran(db:Session, creator: int, judul: str, materi: int,
         creator_id= creator,
         judul=judul,
         id_materi = materi,
-        s3_key = str(creator)+datetime.now().strftime("/%Y/%m/%d/%S%f_")+file.filename
+        s3_key = str(creator)+datetime.datetime.now().strftime("/%Y/%m/%d/%S%f_")+file.filename
     )
 
     contents = file.file.read()
