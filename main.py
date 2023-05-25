@@ -248,6 +248,27 @@ async def read_video_pembelajaran(videoid:int, token_data: schema.TokenData = De
     download_url = crud.read_video_pembelajaran_download_url_by_id(db, videoid)
     return {"metadata":metadata, "download link":download_url}
 
+@app.put("/video/update")
+async def update_video_pembelajaran(
+    video_id:int = Form(...),
+    id_materi: int = Form(...),
+    judul_video: str = Form(...), 
+    token_data: schema.TokenData = Depends(auth.get_token_data), 
+    db: Session = Depends(get_db)):
+
+    auth.check_if_user_is_mentor(db, token_data.id)
+    crud.update_video_pembelajaran_metadata_by_id(db, video_id, id_materi, judul_video)
+
+@app.delete("/video/delete")
+async def delete_video_pembelajaran(
+    video_id:int = Form(...),
+    token_data: schema.TokenData = Depends(auth.get_token_data), 
+    db: Session = Depends(get_db)):
+
+    auth.check_if_user_is_mentor(db, token_data.id)
+    crud.delete_video_pembelajaran_by_id(db, video_id)
+
+
 @app.post("/admin/register")
 async def register_account_admin(register_form: schema.AdminRegisterForm, db: Session =Depends(get_db), admin_token_data = Depends(auth.get_admin_token)):
     try:
@@ -275,7 +296,7 @@ async def read_users_admin(token_data: schema.AdminTokenData = Depends(auth.get_
     
     return current_user
 
-@app.post("/admin/pelajar/updatemember")
+@app.patch("/admin/pelajar/updatemember")
 async def toggle_user_pelajar_is_member(pelajar: schema.UserBase, token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db: Session = Depends(get_db)):
     try:
         crud.update_user_pelajar_toggle_is_member_by_email(db, pelajar.email)
