@@ -4,6 +4,7 @@ import os
 
 load_dotenv()
 auth = (os.getenv('EMAIL_API_KEY_PUBLIC'), os.getenv('EMAIL_API_KEY_PRIVATE'))
+my_email = os.getenv('MY_EMAIL')
 
 def kirim_konfimasi_email(email:str, name:str, otp:str):
     
@@ -17,7 +18,7 @@ def kirim_konfimasi_email(email:str, name:str, otp:str):
         "Messages": [
             {
                 "From": {
-                    "Email": "swift.e_learning@hotmail.com",
+                    "Email": my_email,
                     "Name": "noreply-Swfit E-Learning"
                 },
                 "To": [
@@ -50,7 +51,7 @@ def kirim_password_baru(email:str, name:str, password:str):
         "Messages": [
             {
                 "From": {
-                    "Email": "swift.e_learning@hotmail.com",
+                    "Email": my_email,
                     "Name": "noreply-Swfit E-Learning"
                 },
                 "To": [
