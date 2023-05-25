@@ -228,10 +228,27 @@ def read_video_pembelajaran_metadata_by_id(db: Session, id : int):
     return db.query(models.VideoPembelajaran).filter_by(id = id).one()
 
 def read_video_pembelajaran_download_url_by_id(db: Session, id: int):
-    db_video = db.query(models.VideoPembelajaran).filter_by(id = id).one()
+    db_video = db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == id).one()
 
     return s3.generate_presigned_url(
         'get_object',
         Params = {'Bucket': 'video-pembelajaran', 'Key': db_video.s3_key},
         ExpiresIn = 10800
     )
+
+def update_video_pembelajaran_metadata_by_id(db:Session, video_id:int, id_materi:int, judul_video:str):
+    db_video = db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == video_id).one()
+    db_video.id_materi = id_materi
+    db_video.judul = judul_video
+    db.commit()
+    db.refresh(db_video)
+    return "ok"
+
+def delete_video_pembelajaran_by_id(db:Session, video_id: int):
+    db_video = db.query(models.VideoPembelajaran)\
+    .filter(models.VideoPembelajaran.id == video_id).one()
+
+    s3.delete_object(Bucket='video-pembelajaran', key=db_video.s3_key)
+    db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == video_id).delete()
+    db.commit()
+    return "ok"

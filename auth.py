@@ -37,9 +37,9 @@ def check_if_user_is_mentor(db, id):
     try:
         user:models.Mentor = crud.read_user_mentor_by_id(db, id)
         if user is None: 
-            raise HTTPException(status_code=401, detail="Invalid authentication credentials (a)")
+            raise HTTPException(status_code=401, detail="akun tidak ditemukan")
         if user.Asal is None or user.Asal == null:
-            raise HTTPException(status_code=401, detail="Invalid authentication credentials (b)")
+            raise HTTPException(status_code=401, detail="bukan mentor")
     except Exception as e:
         raise HTTPException(status_code = 401, detail="Invalid authentication credentials -> "+str(e))
 
