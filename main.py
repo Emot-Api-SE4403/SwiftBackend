@@ -248,7 +248,7 @@ async def read_video_pembelajaran(videoid:int, token_data: schema.TokenData = De
     download_url = crud.read_video_pembelajaran_download_url_by_id(db, videoid)
     return {"metadata":metadata, "download link":download_url}
 
-@app.update("/video/update")
+@app.put("/video/update")
 async def update_video_pembelajaran(
     video_id:int = Form(...),
     id_materi: int = Form(...),
@@ -296,7 +296,7 @@ async def read_users_admin(token_data: schema.AdminTokenData = Depends(auth.get_
     
     return current_user
 
-@app.post("/admin/pelajar/updatemember")
+@app.patch("/admin/pelajar/updatemember")
 async def toggle_user_pelajar_is_member(pelajar: schema.UserBase, token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db: Session = Depends(get_db)):
     try:
         crud.update_user_pelajar_toggle_is_member_by_email(db, pelajar.email)
