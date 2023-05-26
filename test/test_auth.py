@@ -11,14 +11,6 @@ import models
 import schema
 from database import SessionLocal
 
-@pytest.fixture
-def db():
-    db = SessionLocal()
-    
-    try:
-        yield db
-    finally:
-        db.close()
 
 def test_verify_password():
     plain_password = "password123"
@@ -47,13 +39,15 @@ def test_check_for_valid_password_invalid_password():
     assert exc.value.status_code == status.HTTP_400_BAD_REQUEST
     assert str(exc.value.detail) == "Password too short"
 
-def test_authenticate_user_valid_user(db):
+def test_authenticate_user_valid_user():
     email = "test@example.com"
     password = "password123"
     hashed_password = auth.get_password_hash(password)
     user = models.User(email=email, hashed_password=hashed_password)
-    db.add(user)
-    db.commit()
+
+    # Mock the database session and relevant functions
+    db = mock.MagicMock()
+    db.query.return_value.filter_by.return_value.first.return_value = user
 
     authenticated_user = auth.authenticate_user(db, email, password)
     assert authenticated_user is not None
@@ -62,52 +56,39 @@ def test_authenticate_user_valid_user(db):
 
 
 def test_authenticate_user_valid_user():
-    # Create a mock session and user object
     mock_session = mock.Mock(spec=Session)
     mock_user = mock.Mock()
     mock_user.hashed_password = auth.get_password_hash("password123")
 
-    # Mock the read_user_by_email function to return the mock user object
     auth.crud.read_user_by_email = mock.Mock(return_value=mock_user)
 
-    # Call the authenticate_user function with the mock session and valid credentials
     user = auth.authenticate_user(mock_session, "test@example.com", "password123")
 
-    # Assert that the authenticate_user function returns the mock user object
     assert user == mock_user
-    # Assert that the read_user_by_email function was called with the correct email
     auth.crud.read_user_by_email.assert_called_once_with(mock_session, "test@example.com")
 
 def test_authenticate_user_invalid_user():
-    # Create a mock session
     mock_session = mock.Mock(spec=Session)
 
-    # Mock the read_user_by_email function to return None (user not found)
     auth.crud.read_user_by_email = mock.Mock(return_value=None)
 
-    # Call the authenticate_user function with the mock session and invalid credentials
     user = auth.authenticate_user(mock_session, "test@example.com", "password123")
 
-    # Assert that the authenticate_user function returns False (user not found)
     assert user is False
-    # Assert that the read_user_by_email function was called with the correct email
     auth.crud.read_user_by_email.assert_called_once_with(mock_session, "test@example.com")
 
 def test_authenticate_user_invalid_password():
-    # Create a mock session and user object
     mock_session = mock.Mock(spec=Session)
     mock_user = mock.Mock()
     mock_user.hashed_password = auth.get_password_hash("password123")
 
-    # Mock the read_user_by_email function to return the mock user object
     auth.crud.read_user_by_email = mock.Mock(return_value=mock_user)
 
-    # Call the authenticate_user function with the mock session and invalid password
     user = auth.authenticate_user(mock_session, "test@example.com", "wrongpassword")
 
-    # Assert that the authenticate_user function returns False (invalid password)
+    
     assert user is False
-    # Assert that the read_user_by_email function was called with the correct email
+    
     auth.crud.read_user_by_email.assert_called_once_with(mock_session, "test@example.com")
 
 
@@ -130,12 +111,54 @@ async def test_get_token_data_invalid_token():
     assert exc_info.value.status_code == 401
 
 
-def test_admin_auth_valid_credentials(db):
-    id = "admin"
-    password = "password123"
+def test_admin_auth_valid_credentials():
+    id = "admin_id"
+    password = "password"
     hashed_password = auth.get_password_hash(password)
+    
     admin = models.Admin(id=id, hashed_password=hashed_password)
-    db.add(admin)
+
+    mock_db = mock.MagicMock()
+    mock_db.query.return_value.filter_by.return_value.first.return_value = admin
+
+    with mock.patch('auth.crud.read_admin_by_id', return_value=admin), \
+         mock.patch('auth.verify_password', return_value=True):
+        result = auth.admin_auth(mock_db, id, password)
+
+    assert result == admin
+
+def test_admin_auth_invalid_credentials():
+    id = "admin_id"
+    password = "password"
+    hashed_password = auth.get_password_hash(password)
+    
+    admin = models.Admin(id=id, hashed_password=hashed_password)
+
+    mock_db = mock.MagicMock()
+    mock_db.query.return_value.filter_by.return_value.first.return_value = admin
+
+    with mock.patch('auth.crud.read_admin_by_id', return_value=admin), \
+         mock.patch('auth.verify_password', return_value=False):
+        with pytest.raises(HTTPException) as exc:
+            auth.admin_auth(mock_db, id, password)
+
+    assert exc.value.status_code == status.HTTP_401_UNAUTHORIZED
+    assert str(exc.value.detail) == "Wrong id/password"
+
+def test_admin_auth_id_not_found():
+    id = "admin_id"
+    password = "password"
+
+    mock_db = mock.MagicMock()
+    mock_db.query.return_value.filter_by.return_value.first.return_value = None
+
+    with mock.patch('auth.crud.read_admin_by_id', return_value=None):
+        with pytest.raises(HTTPException) as exc:
+            auth.admin_auth(mock_db, id, password)
+
+    assert exc.value.status_code == status.HTTP_404_NOT_FOUND
+    assert str(exc.value.detail) == "Not found"
+
    
 
 def test_check_if_user_is_mentor_user_found():
@@ -175,3 +198,27 @@ def test_check_if_user_is_mentor_user_not_mentor():
         assert e.detail == "bukan mentor"
 
     auth.crud.read_user_mentor_by_id.assert_called_once_with(mock_session, 1)
+
+
+
+@pytest.mark.asyncio
+async def test_get_admin_token_valid_token():
+    payload = {"id": "admin_id"}
+
+    token = auth.create_access_token(payload)
+
+    admin_token_data = await auth.get_admin_token(token=token)
+
+    assert admin_token_data.id == payload["id"]
+
+
+@pytest.mark.asyncio
+async def test_get_admin_token_invalid_token():
+    token = "invalid_token"
+
+    with pytest.raises(HTTPException) as exc:
+        await auth.get_admin_token(token=token)
+
+    assert exc.type == HTTPException
+    assert exc.value.status_code == status.HTTP_401_UNAUTHORIZED
+    assert str(exc.value.detail) == "Could not validate credentials"

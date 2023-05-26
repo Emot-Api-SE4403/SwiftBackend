@@ -18,3 +18,4 @@ coverage>=7.2.1
 pytest-asyncio
 pytest-env
 pytest-html
+pytest-cov

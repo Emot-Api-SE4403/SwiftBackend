@@ -92,9 +92,9 @@ async def get_token_data(token: str = Depends(oauth2_scheme)):
 def admin_auth(db: Session, id: str, password: str):
     admin = crud.read_admin_by_id(db, id )
     if not admin:
-        return False
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     if not verify_password(password, admin.hashed_password):
-        return False
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong id/password")
     return admin
 
 async def get_admin_token(token: str = Depends(oauth2_scheme)):
