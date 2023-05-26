@@ -21,4 +21,4 @@ Spacefile
 .coverage
 /coverage_html
 .test.env
-/test_teport
+test_report
