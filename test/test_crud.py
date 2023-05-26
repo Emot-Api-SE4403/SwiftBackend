@@ -437,3 +437,80 @@ def test_create_materi_pembelajaran_with_mock():
     session.commit.assert_called_once()
     session.refresh.assert_called_once()
 
+def test_read_materi_pembelajaran_all_data_with_mock():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    materi_list = [
+        models.Materi(id=1, mapel=models.DaftarMapelSkolastik(1)),
+        models.Materi(id=2, mapel=models.DaftarMapelSkolastik(2)),
+        models.Materi(id=3, mapel=models.DaftarMapelSkolastik(3)),
+    ]
+
+    # Configure the mock session to return the mock data
+    session.query.return_value.all.return_value = materi_list
+
+    # Call the function being tested
+    result = read_materi_pembelajaran_all_data(session)
+
+    # Assertions
+    session.query.return_value.all.assert_called_once()
+    assert result == materi_list
+
+
+def test_read_materi_pembelajaran_by_id_with_mock():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    materi_id = 1
+    materi = models.Materi(id=materi_id, mapel=models.DaftarMapelSkolastik(1))
+
+    # Configure the mock session to return the mock data
+    session.query.return_value.filter.return_value.one.return_value = materi
+
+    # Call the function being tested
+    result = read_materi_pembelajaran_by_id(session, materi_id)
+
+    # Assertions
+    session.query.return_value.filter.return_value.one.assert_called_once()
+    assert result == materi
+
+
+def test_read_materi_pembelajaran_by_mapel_with_mock():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    mapel_int = 1
+    mapel_str = "kuantitatif"
+    mapel = models.DaftarMapelSkolastik(1)
+    materi_list = [
+        models.Materi(id=1, mapel=models.DaftarMapelSkolastik(1)),
+        models.Materi(id=2, mapel=models.DaftarMapelSkolastik(1)),
+    ]
+
+    # Configure the mock session to return the mock data
+    session.query.return_value.filter.return_value.all.return_value = materi_list
+    
+
+    # Call the function being tested with int mapel
+    result_int = read_materi_pembelajaran_by_mapel(session, mapel_int)
+
+    # Assertions for int mapel
+    assert result_int == materi_list
+
+    # Call the function being tested with string mapel
+    result_str = read_materi_pembelajaran_by_mapel(session, mapel_str)
+
+    # Assertions for string mapel
+    assert result_str == materi_list
+
+    # Call the function being tested with string mapel
+    result_enum = read_materi_pembelajaran_by_mapel(session, mapel)
+
+    # Assertions for string mapel
+    assert result_enum == materi_list
+
+
