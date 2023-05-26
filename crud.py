@@ -151,12 +151,12 @@ def read_admin_by_id(db: Session, admin_id: str):
 
 def create_materi_pembelajaran(db:Session, mapel: Union[str, int, models.DaftarMapelSkolastik], nama_materi: str):
     if isinstance(mapel, int):
-        db_materi = models.MateriPembelajaran(
+        db_materi = models.Materi(
             nama = nama_materi,
             mapel = models.DaftarMapelSkolastik(mapel),
         )
     elif isinstance(mapel, models.DaftarMapelSkolastik):
-        db_materi = models.MateriPembelajaran(
+        db_materi = models.Materi(
             nama = nama_materi,
             mapel = mapel,
         )
