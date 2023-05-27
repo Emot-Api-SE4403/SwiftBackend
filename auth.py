@@ -34,15 +34,13 @@ def check_for_valid_password(password):
         raise HTTPException(status_code=400, detail="Password too short")
 
 def check_if_user_is_mentor(db, id):
-    try:
-        user:models.Mentor = crud.read_user_mentor_by_id(db, id)
-        if user is None: 
-            raise HTTPException(status_code=401, detail="akun tidak ditemukan")
-        if user.Asal is None or user.Asal == null:
-            raise HTTPException(status_code=401, detail="bukan mentor")
-    except Exception as e:
-        raise HTTPException(status_code = 401, detail="Invalid authentication credentials -> "+str(e))
 
+    user:models.Mentor = crud.read_user_mentor_by_id(db, id)
+    if user is None: 
+        raise HTTPException(status_code=401, detail="akun tidak ditemukan")
+    if user.Asal is None or user.Asal == null:
+        raise HTTPException(status_code=401, detail="bukan mentor")
+    
 
 def get_password_hash(password): # diapakai
     check_for_valid_password(password)
@@ -94,9 +92,9 @@ async def get_token_data(token: str = Depends(oauth2_scheme)):
 def admin_auth(db: Session, id: str, password: str):
     admin = crud.read_admin_by_id(db, id )
     if not admin:
-        return False
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     if not verify_password(password, admin.hashed_password):
-        return False
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong id/password")
     return admin
 
 async def get_admin_token(token: str = Depends(oauth2_scheme)):
