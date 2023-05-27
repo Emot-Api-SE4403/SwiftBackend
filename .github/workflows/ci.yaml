@@ -10,6 +10,17 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11"]
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testdatabase
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -23,15 +34,10 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Set environment variables
         run: |
-          echo "SQL_DATABASE_URL=mysql+pymysql://root:my-secret-pw@localhost:3306/testdatabase" >> $GITHUB_ENV
-      - name: Start MySQL container
-        run: docker run --name test-mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d -p 3306:3306 mysql:latest
-      - name: Wait for MySQL to start
-        run: |
-          until docker exec test-mysql mysqladmin ping --silent; do
-            echo 'Waiting for MySQL to start...'
-            sleep 1
-          done
+          echo "SQL_DATABASE_URL=mysql+pymysql://root:root@localhost:3306/testdatabase" >> $GITHUB_ENV
       - name: Run tests with MySQL
         run: |
           coverage run -m pytest test/
+
+      - name: Shutting down mysql
+        run: sudo service mysql stop
