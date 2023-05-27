@@ -1,0 +1,37 @@
+name: Python package
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Set environment variables
+        run: |
+          echo "SQL_DATABASE_URL=mysql://root:my-secret-pw@localhost:3306/testdatabase" >> $GITHUB_ENV
+      - name: Start MySQL container
+        run: docker run --name test-mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d -p 3306:3306 mysql:latest
+      - name: Wait for MySQL to start
+        run: |
+          until docker exec test-mysql mysqladmin ping --silent; do
+            echo 'Waiting for MySQL to start...'
+            sleep 1
+          done
+      - name: Run tests with MySQL
+        run: |
+          pytest
