@@ -115,8 +115,9 @@ class Soal(Base):
     pertanyaan = Column(String(512), nullable=False)
     type = Column(String(32))
 
+    
+    id_tugas = Column(Integer, ForeignKey('tugas_pembelajaran.id'))
     __mapper_args__ = {'polymorphic_on': type}
-    id_tugas = Column(Integer, ForeignKey('TugasPembelajaran.id'))
 
 class SoalABC(Soal):
     __mapper_args__ = {'polymorphic_identity': 'pilihan_ganda'}
