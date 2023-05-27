@@ -34,4 +34,4 @@ jobs:
           done
       - name: Run tests with MySQL
         run: |
-          pytest
+          coverage run -m pytest test/
