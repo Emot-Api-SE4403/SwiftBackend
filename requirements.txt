@@ -11,6 +11,7 @@ SQLAlchemy_Utils>=0.40.0
 PyMySQL>=1.0.2
 boto3>=1.26.124
 python-multipart>=0.0.1
+requests
 
 # Testing
 pytest>-7.3.1
