@@ -22,3 +22,4 @@ Spacefile
 /coverage_html
 .test.env
 test_report
+test/.pytest_cache
