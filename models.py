@@ -82,11 +82,90 @@ class VideoPembelajaran(Base):
     time_created = Column(DateTime(timezone=True), server_default=func.now())
 
     # Content
-    judul = Column(String(255), nullable=False)
+    judul = Column(String(127), nullable=False)
     id_materi = Column(Integer, ForeignKey("materi_pembelajaran.id"))
+    id_tugas = Column(Integer, ForeignKey("tugas_pembelajaran.id"), unique=True)
 
     s3_key = Column(String(255))
 
     # Relation
     creator = relationship(Mentor, backref="video_pembelajaran")
     materi = relationship(Materi, backref="video_pembelajaran")
+    tugas = relationship("TugasPembelajaran", backref="video_pembelajaran", uselist=False)
+
+
+class TugasPembelajaran(Base):
+    __tablename__ = "tugas_pembelajaran"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    time_created = Column(DateTime(timezone=True), server_default=func.now())
+    time_updated = Column(DateTime(timezone=True), onupdate=func.now())
+
+    judul = Column(String(255))
+    attempt_allowed = Column(Integer)
+
+    # Relation
+    video = relationship(VideoPembelajaran, backref="tugas_pembelajaran", uselist=False)
+    soal = relationship("Soal", backref="tugas_pembelajaran")
+
+class Soal(Base):
+    __tablename__ = "soal"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    pertanyaan = Column(String(512), nullable=False)
+    type = Column(String(32))
+
+    __mapper_args__ = {'polymorphic_on': type}
+    id_tugas = Column(Integer, ForeignKey('TugasPembelajaran.id'))
+
+class SoalABC(Soal):
+    __mapper_args__ = {'polymorphic_identity': 'pilihan_ganda'}
+    __tablename__ = "soal_pilihan_ganda"
+
+    id_soal = Column(Integer, ForeignKey('soal.id'), primary_key=True)
+
+    kunci = Column(Integer, ForeignKey('jawaban_pilihan_ganda.id_soal')) 
+    pilihan = relationship("JawabanABC", backref="soal_pilihan_ganda")
+
+class JawabanABC(Base):
+    __tablename__ = "jawaban_pilihan_ganda"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id_soal = Column(Integer, ForeignKey('soal_pilihan_ganda.id_soal'))
+    jawaban = Column(String(127))
+
+class SoalBenarSalah(Soal):
+    __mapper_args__ = {'polymorphic_identity': 'benar_salah'}
+    __tablename__ = "soal_benar_salah"
+
+    id_soal = Column(Integer, ForeignKey('soal.id'), primary_key=True)
+    benar = Column(String(32))
+    salah = Column(String(32))
+
+    pilihan = relationship("JawabanBenarSalah", backref="soal_benar_salah")
+
+class JawabanBenarSalah(Base):
+    __tablename__ = "jawaban_benar_salah"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id_soal = Column(Integer, ForeignKey('soal_benar_salah.id_soal'))
+    jawaban = Column(String(127))
+    kunci = Column(Boolean)
+
+
+class SoalMultiPilih(Soal):
+    __mapper_args__ = {'polymorphic_identity': 'multi_pilih'}
+    __tablename__ = "soal_multi_pilih"
+
+    id_soal = Column(Integer, ForeignKey('soal.id'), primary_key=True)
+
+    pilihan = relationship("JawabanMultiPilih", backref="soal_multi_pilih")
+
+
+class JawabanMultiPilih(Base):
+    __tablename__ = "jawaban_multi_pilih"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id_soal = Column(Integer, ForeignKey('soal_multi_pilih.id_soal'))
+    jawaban = Column(String(127))
+    benar = Column(Boolean)
