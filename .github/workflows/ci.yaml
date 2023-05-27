@@ -2,6 +2,11 @@ name: Python package
 
 on: [push]
 
+env:
+  DOMAIN: ${{ vars.TEST_DOMAIN }}
+  SECRET_KEY_AUTH: ${{ vars.TEST_SECRET_KEY_AUTH }}
+  SQL_DATABASE_URL: ${{ vars.TEST_SQL_DATABASE_URL }}
+
 jobs:
   build:
 
