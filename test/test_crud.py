@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
@@ -513,4 +514,217 @@ def test_read_materi_pembelajaran_by_mapel_with_mock():
     # Assertions for string mapel
     assert result_enum == materi_list
 
+
+def test_update_materi_pembelajaran_by_id_with_mock():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    id = 1
+    mapel_int = 2
+    mapel_str = "literasi_indonesia"
+    nama_materi = "Updated Materi"
+
+    # Create a mock materi object
+    materi = models.Materi(
+        id=id,
+        nama="Original Materi",
+        mapel=models.DaftarMapelSkolastik(mapel_int)
+    )
+
+    # Configure the mock session query and filter to return the mock materi object
+    session.query.return_value.filter.return_value.one.return_value = materi
+
+    # Call the function being tested with mapel as an integer
+    result_int = update_materi_pembelajaran_by_id(session, id, mapel_int, nama_materi)
+
+    # Assertions for mapel as an integer
+    session.query.assert_called_once_with(models.Materi)
+    session.query.return_value.filter.return_value.one.assert_called_once()
+    session.commit.assert_called_once()
+    session.refresh.assert_called_once_with(materi)
+    assert materi.nama == nama_materi
+    assert materi.mapel == models.DaftarMapelSkolastik(mapel_int)
+    assert result_int == materi
+
+    # Call the function being tested with mapel as a string
+    result_str = update_materi_pembelajaran_by_id(session, id, mapel_str, nama_materi)
+
+    # Assertions for mapel as a string
+    session.query.assert_called_with(models.Materi)
+    session.query.return_value.filter.return_value.one.assert_called()
+    session.commit.assert_called()
+    session.refresh.assert_called()
+    assert materi.nama == nama_materi
+    assert materi.mapel == models.DaftarMapelSkolastik[mapel_str]
+    assert result_str == materi
+
+def test_delete_materi_pembelajaran_by_id_with_mock():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    id = 1
+
+    # Configure the mock session query and filter to return the desired result
+    session.query.return_value.filter.return_value.delete.return_value = 1
+
+    # Call the function being tested
+    result = delete_materi_pembelajaran_by_id(session, id)
+
+    # Assertions
+    session.query.return_value.filter.return_value.delete.assert_called_once()
+    session.commit.assert_called_once()
+    assert result == 1
+
+
+def test_create_video_pembelajaran_with_mock():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    creator_id = 1
+    judul = "Video Pembelajaran"
+    materi_id = 2
+    s3_key = "video_key"
+
+    # Create a mock file
+    file = MagicMock(spec=UploadFile)
+    file.filename = "video.mp4"
+    file.file = MagicMock()
+    file.file.read.return_value = b"video content"
+
+    # Create a mock video object
+    video = models.VideoPembelajaran(
+        creator_id=creator_id,
+        judul=judul,
+        id_materi=materi_id,
+        s3_key=s3_key
+    )
+
+    # Patch datetime.datetime.now() to return a fixed value
+    with patch('crud.datetime.datetime') as mock_datetime:
+        now = datetime.datetime(2023, 5, 25, 12, 0, 0)
+        mock_datetime.now.return_value = now
+
+        # Patch s3.upload_fileobj
+        with patch('crud.s3.upload_fileobj') as mock_upload_fileobj:
+            mock_upload_fileobj.return_value = None
+
+            # Call the function being tested
+            result = create_video_pembelajaran(session, creator_id, judul, materi_id, file)
+
+            # Assertions
+            session.add.assert_called_once()
+            session.commit.assert_called_once()
+            session.refresh.assert_called_once()
+            mock_datetime.now.assert_called_once()
+            mock_upload_fileobj.assert_called_once()
+            file.file.read.assert_called_once()
+            file.file.seek.assert_called_once_with(0)
+            file.file.close.assert_called_once()
+
+
+def test_read_video_pembelajaran_metadata_by_id_with_mock():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    video_id = 1
+
+    # Create a mock video object
+    video = models.VideoPembelajaran(id=video_id)
+
+    # Configure the mock session to return the mock data
+    session.query.return_value.filter_by.return_value.one.return_value = video
+
+    # Call the function being tested
+    result = read_video_pembelajaran_metadata_by_id(session, video_id)
+
+    # Assertions
+    session.query.return_value.filter_by.assert_called_once_with(id=video_id)
+    session.query.return_value.filter_by.return_value.one.assert_called_once()
+    assert result == video
+
+
+def test_read_video_pembelajaran_download_url_by_id_with_mock():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    video_id = 1
+    s3_key = "video_key.mp4"
+    download_url = "https://example.com/video_key.mp4"
+
+    # Create a mock video object
+    video = models.VideoPembelajaran(id=video_id, s3_key=s3_key)
+
+    # Configure the mock session to return the mock data
+    session.query.return_value.filter.return_value.one.return_value = video
+
+    # Patch the generate_presigned_url function
+    with patch('crud.s3.generate_presigned_url') as mock_generate_presigned_url:
+        mock_generate_presigned_url.return_value = download_url
+
+        # Call the function being tested
+        result = read_video_pembelajaran_download_url_by_id(session, video_id)
+
+        # Assertions
+        session.query.return_value.filter.return_value.one.assert_called_once()
+        mock_generate_presigned_url.assert_called_once_with(
+            'get_object',
+            Params={'Bucket': 'video-pembelajaran', 'Key': s3_key},
+            ExpiresIn=10800
+        )
+        assert result == download_url
+
+
+def test_update_video_pembelajaran_metadata_by_id_with_mock():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    video_id = 1
+    id_materi = 1
+    judul_video = "Math Lesson"
+
+    # Create a mock video object
+    video = models.VideoPembelajaran(id=video_id)
+
+    # Configure the mock session to return the mock data
+    session.query.return_value.filter.return_value.one.return_value = video
+
+    # Call the function being tested
+    result = update_video_pembelajaran_metadata_by_id(session, video_id, id_materi, judul_video)
+
+    # Assertions
+    assert video.id_materi == id_materi
+    assert video.judul == judul_video
+    session.commit.assert_called_once()
+    session.refresh.assert_called_once_with(video)
+    assert result == "ok"
+
+
+def test_delete_video_pembelajaran_by_id_with_mock():
+    # Create a mock session and S3 client
+    session = MagicMock(spec=Session)
+
+    # Mock data
+    video_id = 1
+    s3_key = "video_key"
+
+    # Create a mock video object
+    video = models.VideoPembelajaran(id=video_id, s3_key=s3_key)
+
+    # Configure the mock session to return the mock data
+    session.query.return_value.filter.return_value.one.return_value = video
+
+    # Call the function being tested
+    with patch('database.s3.delete_object', return_value=True):
+        result = delete_video_pembelajaran_by_id(session, video_id)
+
+    # Assertions
+    session.query.return_value.filter.return_value.delete.assert_called_once()
+    session.commit.assert_called_once()
+    assert result == "ok"
 
