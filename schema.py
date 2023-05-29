@@ -86,7 +86,7 @@ class AdminRegisterForm(AdminBase):
     new_password: str
     
 class schema_pembuatan_materi_pembelajaran_baru(BaseModel):
-    mapel: Union[str, int]
+    mapel: Union[int, str]
     nama_materi: str
 
 
@@ -95,7 +95,7 @@ class SoalABC(BaseModel):
     pilihan_jawaban: List[str]
 
 class SoalABCKunci(SoalABC):
-    index_jawaban_benar: str
+    index_jawaban_benar: int
 
 class JawabanBenarSalah(BaseModel):
     isi_jawaban: str
@@ -122,7 +122,7 @@ class SoalMultiPilih(BaseModel):
 class TugasPembelajaran(BaseModel):
     judul: str
     jumlah_attempt: int
-    daftar_soal: List[Union[SoalABC, SoalABCKunci, SoalBenarSalah, SoalMultiPilih]]
+    daftar_soal: List[Union[SoalABCKunci, SoalABC, SoalBenarSalah, SoalMultiPilih]]
 
 class ReadTugasPembelajaran(TugasPembelajaran):
     id: int

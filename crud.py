@@ -254,11 +254,20 @@ def delete_video_pembelajaran_by_id(db:Session, video_id: int):
     return "ok"
 
 def create_tugas_pembelajaran(db:Session, judul, attempt:int, id_video:int):
-    db_video = db.query(models.VideoPembelajaran).get(id_video)
-    db_tugas = models.TugasPembelajaran(judul=judul, attempt=attempt, video=db_video)
+    # print("read video db")
+    db_video = db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == id_video).one()
+
+    # print("make tugas db")
+    db_tugas = models.TugasPembelajaran(judul=judul, attempt_allowed=attempt)
     db.add(db_tugas)
     db.commit()
     db.refresh(db_tugas)
+
+    # print("update video db")
+    db_video.id_tugas = db_tugas.id
+    db.commit()
+    db.refresh(db_video)
+    
     return db_tugas
 
 def create_soal_abc(db:Session, pertanyaan, id_tugas):
@@ -303,11 +312,37 @@ def create_soal_benar_salah(db:Session, pertanyaan, id_tugas, pernyataan_true, p
     return db_soal
 
 def create_jawaban_benar_salah(db:Session, id_soal, jawaban, pernyataan_yg_benar):
+    print("membuat jawaban benar salah")
     db_jawaban = models.JawabanBenarSalah(
         id_soal=id_soal,
         jawaban=jawaban,
         kunci=pernyataan_yg_benar
     )
+    db.add(db_jawaban)
+    db.commit()
+    db.refresh(db_jawaban)
+    print("selesai membuat jawaban benar salah")
+    return db_jawaban
+
+
+def create_soal_multi_pilih(db:Session, pertanyaan, id_tugas):
+    db_soal = models.SoalMultiPilih(
+        pertanyaan=pertanyaan,
+        type="multi_pilih",
+        id_tugas=id_tugas
+    )
+    db.add(db_soal)
+    db.commit()
+    db.refresh(db_soal)
+    return db_soal
+
+def create_jawaban_multi_pilih(db:Session, id_soal, jawaban, benar):
+    db_jawaban = models.JawabanMultiPilih(
+        id_soal=id_soal,
+        jawaban=jawaban,
+        benar=benar
+    )
+
     db.add(db_jawaban)
     db.commit()
     db.refresh(db_jawaban)
