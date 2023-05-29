@@ -1,7 +1,9 @@
+import json
 from typing import Union
+from urllib import response
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 import sqlalchemy
@@ -73,7 +75,50 @@ async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depen
             headers={"WWW-Authenticate": "Bearer"},
         )
     crud.update_user_is_active_by_id(db, id)
-    return {"detail":"success"}
+    response = ''' \
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Account Activation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 40px;
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+      margin-top: 0;
+    }
+    p {
+      color: #666;
+      margin-bottom: 20px;
+    }
+    .success-message {
+      color: #2ecc71;
+      font-size: 24px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Account Activation</h1>
+    <p>Selamat! Akun anda telah berhasil diaktifkan.</p>
+    <p class="success-message">Selamat menikmati layanan kami!</p>
+  </div>
+</body>
+</html> \
+        '''
+    return HTMLResponse(content=response, status_code=201)
 
 @app.post("/user/resetpassword")
 async def permintaan_reset_password(email:str = "", db : Session = Depends(get_db)):
@@ -374,3 +419,19 @@ async def delete_materi_menggunakan_id(id:int, _ : schema.AdminTokenData=Depends
     except:
         raise HTTPException(500, "something went wrong")
     
+@app.post("/video/addtugas")
+async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,tokendata = Depends(auth.get_token_data), db= Depends(get_db)):
+    try:
+        db_video = crud.read_video_pembelajaran_metadata_by_id(db, tugas_baru.id_video)
+    except NoResultFound:
+        raise HTTPException(status_code=400, detail="Invalid video id")
+    try:
+        db_tugas = crud.create_tugas_pembelajaran(db, tugas_baru.judul, \
+                                              tugas_baru.jumlah_attempt, \
+                                              tugas_baru.id_video)
+    except:
+        HTTPException(500, "Something went wrong")
+    
+    print(tugas_baru)
+    # return tugas_baru
+    return {"obj":"allowed"}

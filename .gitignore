@@ -16,6 +16,7 @@ Dockerfile
 /.aws/
 .space
 Spacefile
+.spaceignore
 
 # test file
 .coverage

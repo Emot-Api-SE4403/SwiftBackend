@@ -91,21 +91,21 @@ class VideoPembelajaran(Base):
     # Relation
     creator = relationship(Mentor, backref="video_pembelajaran")
     materi = relationship(Materi, backref="video_pembelajaran")
-    tugas = relationship("TugasPembelajaran", backref="video_pembelajaran", uselist=False)
+    tugas = relationship("TugasPembelajaran", backref="video_pembelajaran", uselist=False, viewonly=True)
 
 
 class TugasPembelajaran(Base):
     __tablename__ = "tugas_pembelajaran"
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    time_created = Column(DateTime(timezone=True), server_default=func.now())
-    time_updated = Column(DateTime(timezone=True), onupdate=func.now())
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True) # read: ada, post: tidak
+    time_created = Column(DateTime(timezone=True), server_default=func.now()) # read: ada, post: tidak
+    time_updated = Column(DateTime(timezone=True), onupdate=func.now()) # read: ada, post: tidak
 
     judul = Column(String(255))
     attempt_allowed = Column(Integer)
 
     # Relation
-    video = relationship(VideoPembelajaran, backref="tugas_pembelajaran", uselist=False)
+    video = relationship(VideoPembelajaran, backref="tugas_pembelajaran", uselist=False, viewonly=True) # read tidak, post ada
     soal = relationship("Soal", backref="tugas_pembelajaran")
 
 class Soal(Base):
@@ -126,7 +126,8 @@ class SoalABC(Soal):
     id_soal = Column(Integer, ForeignKey('soal.id'), primary_key=True)
 
     kunci = Column(Integer, ForeignKey('jawaban_pilihan_ganda.id_soal')) 
-    pilihan = relationship("JawabanABC", backref="soal_pilihan_ganda")
+    pilihan = relationship("JawabanABC", backref="soal_pilihan_ganda", \
+            primaryjoin="SoalABC.id == foreign(JawabanABC.id_soal)")
 
 class JawabanABC(Base):
     __tablename__ = "jawaban_pilihan_ganda"

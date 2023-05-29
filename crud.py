@@ -1,5 +1,5 @@
 import datetime
-from typing import Union
+from typing import List, Union
 import secrets
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
@@ -252,3 +252,66 @@ def delete_video_pembelajaran_by_id(db:Session, video_id: int):
     db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == video_id).delete()
     db.commit()
     return "ok"
+
+def create_tugas_pembelajaran(db:Session, judul, attempt:int, id_video:int):
+    db_video = db.query(models.VideoPembelajaran).get(id_video)
+    db_tugas = models.TugasPembelajaran(judul=judul, attempt=attempt, video=db_video)
+    db.add(db_tugas)
+    db.commit()
+    db.refresh(db_tugas)
+    return db_tugas
+
+def create_soal_abc(db:Session, pertanyaan, id_tugas):
+    db_soal = models.SoalABC(
+        pertanyaan=pertanyaan,
+        type="pilihan_ganda",
+        id_tugas=id_tugas
+    )
+    db.add(db_soal)
+    db.commit()
+    db.refresh(db_soal)
+    return db_soal
+
+def create_jawaban_abc(db:Session, id_soal, jawaban):
+    db_jawaban = models.JawabanABC(
+        id_soal=id_soal,
+        jawaban=jawaban
+    )
+    db.add(db_jawaban)
+    db.commit()
+    db.refresh(db_jawaban)
+    return db_jawaban
+
+def update_soal_abc_add_kunci_by_ids(db:Session, id_soal, id_kunci):
+    soal = db.query(models.SoalABC).get(id_soal)
+    soal.kunci = id_kunci
+    db.commit()
+    db.refresh(soal)
+    return soal
+
+def create_soal_benar_salah(db:Session, pertanyaan, id_tugas, pernyataan_true, pernyataan_false):
+    db_soal = models.SoalBenarSalah(
+        pertanyaan=pertanyaan,
+        type="benar_salah",
+        id_tugas=id_tugas,
+        benar=pernyataan_true,
+        salah=pernyataan_false
+    )
+    db.add(db_soal)
+    db.commit()
+    db.refresh(db_soal)
+    return db_soal
+
+def create_jawaban_benar_salah(db:Session, id_soal, jawaban, pernyataan_yg_benar):
+    db_jawaban = models.JawabanBenarSalah(
+        id_soal=id_soal,
+        jawaban=jawaban,
+        kunci=pernyataan_yg_benar
+    )
+    db.add(db_jawaban)
+    db.commit()
+    db.refresh(db_jawaban)
+    return db_jawaban
+
+
+
