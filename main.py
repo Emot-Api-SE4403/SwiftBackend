@@ -491,3 +491,48 @@ async def menghapus_tugas_yang_ada_pada_video(id_video:int = Form(...), token:sc
         raise HTTPException(status_code=400, detail="Invalid id")
     
     
+@app.get("/video/tugas", )
+async def mengakses_soal_yang_ada_pada_video(id_video:int = Form(...), \
+                                             token:schema.TokenData=Depends(auth.get_token_data), \
+                                             db=Depends(get_db)):
+    try:
+        db_video = crud.read_video_pembelajaran_metadata_by_id(db, id_video)
+
+        if db_video.id_tugas == None:
+            raise HTTPException(status_code=400, detail="Tidak ada tugas pada video ini")
+        
+        tugas_pembelajaran = crud.read_tugas_pembelajaran_by_id(db,db_video.id_tugas )
+        daftar_soal=[]
+        for soal in tugas_pembelajaran.soal:
+            if isinstance(soal, models.SoalABC):
+                _daftar_jawaban = []
+                for jawaban in soal.pilihan:
+                    _daftar_jawaban.append(jawaban.jawaban)
+                daftar_soal.append(schema.SoalABC(pertanyaan=soal.pertanyaan, pilihan_jawaban=_daftar_jawaban))
+            elif isinstance(soal, models.SoalBenarSalah):
+                _daftar_jawaban = []
+                for jawaban in soal.pilihan:
+                    _daftar_jawaban.append(schema.JawabanBenarSalah(isi_jawaban=jawaban.jawaban))
+                daftar_soal.append(schema.SoalBenarSalah(pertanyaan=soal.pertanyaan, \
+                                                         pernyataan_pada_benar=soal.benar,\
+                                                         pernyataan_pada_salah=soal.salah, \
+                                                         daftar_jawaban=_daftar_jawaban)) 
+            elif isinstance(soal, models.SoalMultiPilih):
+                _daftar_jawaban = []
+                for jawaban in soal.pilihan:
+                    _daftar_jawaban.append(schema.JawabanMultiPilih(isi_jawaban=jawaban.jawaban))
+
+                daftar_soal.append(schema.SoalMultiPilih(pertanyaan=soal.pertanyaan, pilihan=_daftar_jawaban))
+        return schema.ReadTugasPembelajaran(
+            judul=tugas_pembelajaran.judul,
+            jumlah_attempt=tugas_pembelajaran.attempt_allowed,
+            daftar_soal=daftar_soal,
+            id=tugas_pembelajaran.id,
+            time_created=tugas_pembelajaran.time_created,
+            time_updated=tugas_pembelajaran.time_updated if tugas_pembelajaran.time_updated \
+                else tugas_pembelajaran.time_created
+        )
+            
+        
+    except NoResultFound:
+        raise HTTPException(status_code=400, detail="Invalid id")

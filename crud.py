@@ -390,3 +390,8 @@ def delete_tugas_pembelajaran_by_id(db: Session, tugas_pembelajaran_id: int):
         return True
 
     return False
+
+
+def read_tugas_pembelajaran_by_id(db:Session, id_tugas):
+    return db.query(models.TugasPembelajaran).filter(models.TugasPembelajaran.id == id_tugas).one()
+
