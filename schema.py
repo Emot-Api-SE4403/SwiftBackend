@@ -107,7 +107,7 @@ class SoalBenarSalah(BaseModel):
     pertanyaan: str
     pernyataan_pada_benar: str
     pernyataan_pada_salah: str
-    daftar_jawaban: List[Union[JawabanBenarSalah, JawabanBenarSalahKunci]]
+    daftar_jawaban: List[Union[JawabanBenarSalahKunci, JawabanBenarSalah]]
 
 class JawabanMultiPilih(BaseModel):
     isi_jawaban: str
@@ -117,7 +117,7 @@ class JawabanMultiPilihKunci(JawabanMultiPilih):
 
 class SoalMultiPilih(BaseModel):
     pertanyaan: str
-    pilihan: List[Union[JawabanMultiPilih, JawabanMultiPilihKunci]]
+    pilihan: List[Union[JawabanMultiPilihKunci, JawabanMultiPilih]]
 
 class TugasPembelajaran(BaseModel):
     judul: str

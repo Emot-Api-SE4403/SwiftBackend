@@ -423,11 +423,18 @@ async def delete_materi_menggunakan_id(id:int, _ : schema.AdminTokenData=Depends
     except:
         raise HTTPException(500, "something went wrong")
     
-@app.post("/video/addtugas")
-async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,tokendata = Depends(auth.get_token_data), db= Depends(get_db)):
+@app.post("/video/tugas/add")
+async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,tokendata:schema.TokenData = Depends(auth.get_token_data), db= Depends(get_db)):
     try:
+        auth.check_if_user_is_mentor(db, tokendata.id)
+
         db_video = crud.read_video_pembelajaran_metadata_by_id(db, tugas_baru.id_video)
-    
+
+        if(db_video.creator_id != tokendata.id):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="creator id missmatch")
+        
+        if db_video.id_tugas != None:
+            raise HTTPException(status_code=400, detail="Tugas sudah ada")
 
         db_tugas = crud.create_tugas_pembelajaran(db, tugas_baru.judul, \
                                               tugas_baru.jumlah_attempt, \
@@ -437,29 +444,50 @@ async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,token
             if isinstance(soal, schema.SoalABCKunci):
                 db_soal = crud.create_soal_abc(db, soal.pertanyaan, db_tugas.id)
                 print("+++++++++++++++++++++++++++++", soal.pilihan_jawaban)
-                for i in range(soal.pilihan_jawaban.count):
+                for i in range(len(soal.pilihan_jawaban)):
                     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
                     string_jawaban=soal.pilihan_jawaban[i]
                     jawaban = crud.create_jawaban_abc(db, db_soal.id, string_jawaban)
                     print(string_jawaban,"==========================================================")
-                    if soal.jawaban_benar == i:
-                        crud.update_soal_abc_add_kunci_by_ids(db, db_soal.id, jawaban.id)
+                    if soal.index_jawaban_benar == i:
+                        db_soal = crud.update_soal_abc_add_kunci_by_ids(db, db_soal.id, jawaban.id)
+                    print("/////////////////////////////////////////////")
             elif isinstance(soal, schema.SoalBenarSalah):
                 db_soal = crud.create_soal_benar_salah(db, soal.pertanyaan, db_tugas.id,\
                                                        soal.pernyataan_pada_benar, \
                                                        soal.pernyataan_pada_salah)
                 for jawaban in soal.daftar_jawaban:
-                    crud.create_jawaban_benar_salah(db, db_soal.id, jawaban.isi_jawaban, \
-                                                    jawaban.jawaban_pernyataan_yang_benar )
+                    if isinstance(jawaban, schema.JawabanBenarSalahKunci):
+                        crud.create_jawaban_benar_salah(db, db_soal.id, jawaban.isi_jawaban, \
+                                                        jawaban.jawaban_pernyataan_yang_benar )
             elif isinstance(soal, schema.SoalMultiPilih):
                 db_soal = crud.create_soal_multi_pilih(db, soal.pertanyaan, db_tugas.id)
                 for jawaban in soal.pilihan:
-                    crud.create_jawaban_multi_pilih(db, db_soal.id, jawaban.isi_jawaban, \
-                                                    jawaban.jawaban_ini_benar)
+                    if isinstance(jawaban, schema.JawabanMultiPilihKunci):
+                        crud.create_jawaban_multi_pilih(db, db_soal.id, jawaban.isi_jawaban, \
+                                                        jawaban.jawaban_ini_benar)
         print("Save tugas selesai")
         return(db_tugas)
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Invalid video id")
-    except Exception as e:
-        HTTPException(500, str(e))
+    
+
+@app.delete("/video/tugas/delete")
+async def menghapus_tugas_yang_ada_pada_video(id_video:int = Form(...), token:schema.TokenData=Depends(auth.get_token_data), \
+                                              db=Depends(get_db) ):
+    try:
+        auth.check_if_user_is_mentor(db, token.id)
+
+        db_video = crud.read_video_pembelajaran_metadata_by_id(db, id_video)
+
+        if(db_video.creator_id != token.id):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="creator id missmatch")
+
+        if db_video.id_tugas == None:
+            raise HTTPException(status_code=400, detail="Tidak ada tugas pada video ini")
+        crud.delete_tugas_pembelajaran_by_id(db, db_video.id_tugas) # TODO
+        return(f"Tugas berhasil dihapus")
+    except NoResultFound:
+        raise HTTPException(status_code=400, detail="Invalid id")
+    
     

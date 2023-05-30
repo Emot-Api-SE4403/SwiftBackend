@@ -292,10 +292,19 @@ def create_jawaban_abc(db:Session, id_soal, jawaban):
     return db_jawaban
 
 def update_soal_abc_add_kunci_by_ids(db:Session, id_soal, id_kunci):
-    soal = db.query(models.SoalABC).get(id_soal)
+    print("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1")
+
+    soal = db.query(models.SoalABC).filter(models.SoalABC.id == id_soal).one()
+    print("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2")
+
     soal.kunci = id_kunci
+    print("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 3")
+
     db.commit()
+    print("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 4")
+
     db.refresh(soal)
+    print("okokokokokokokokokokokokokokokokokokokokokokok")
     return soal
 
 def create_soal_benar_salah(db:Session, pertanyaan, id_tugas, pernyataan_true, pernyataan_false):
@@ -349,4 +358,35 @@ def create_jawaban_multi_pilih(db:Session, id_soal, jawaban, benar):
     return db_jawaban
 
 
+def update_video_pembelajaran_remove_tugas(db:Session, id_video:int):
+    db_video = db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == id_video).one()
+    db_video.id_tugas = None
+    db.commit()
 
+
+def delete_tugas_pembelajaran_by_id(db: Session, tugas_pembelajaran_id: int):
+    # Get the TugasPembelajaran object
+    tugas_pembelajaran:models.TugasPembelajaran = db.query(models.TugasPembelajaran).get(tugas_pembelajaran_id)
+
+    if tugas_pembelajaran:
+        # Delete the associated Soal objects and their answers
+        for soal in tugas_pembelajaran.soal:
+            if isinstance(soal, models.SoalABC):
+                for jawaban in soal.pilihan:
+                    db.delete(jawaban)
+                db.delete(soal)
+            elif isinstance(soal, models.SoalBenarSalah):
+                for jawaban in soal.pilihan:
+                    db.delete(jawaban)
+                db.delete(soal)
+            elif isinstance(soal, models.SoalMultiPilih):
+                for jawaban in soal.pilihan:
+                    db.delete(jawaban)
+                db.delete(soal)
+        update_video_pembelajaran_remove_tugas(db, tugas_pembelajaran.video.id)
+        db.delete(tugas_pembelajaran)
+        db.commit()
+
+        return True
+
+    return False

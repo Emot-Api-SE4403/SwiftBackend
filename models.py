@@ -125,9 +125,8 @@ class SoalABC(Soal):
 
     id_soal = Column(Integer, ForeignKey('soal.id'), primary_key=True)
 
-    kunci = Column(Integer, ForeignKey('jawaban_pilihan_ganda.id_soal')) 
-    pilihan = relationship("JawabanABC", backref="soal_pilihan_ganda", \
-            primaryjoin="SoalABC.id == foreign(JawabanABC.id_soal)")
+    kunci = Column(Integer) 
+    pilihan = relationship("JawabanABC", backref="soal_pilihan_ganda")
 
 class JawabanABC(Base):
     __tablename__ = "jawaban_pilihan_ganda"
