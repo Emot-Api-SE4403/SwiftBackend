@@ -155,3 +155,9 @@ class TambahTugasPembelajaran(TugasPembelajaran):
 
     class Config:
         orm_mode = True
+
+class format_kirim_jawaban_tugas(BaseModel):
+    id_tugas:int
+    waktu_mulai: datetime
+    waktu_selesai: datetime
+    jawaban: List[Union[List[str], str]]

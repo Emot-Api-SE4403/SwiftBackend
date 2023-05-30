@@ -443,15 +443,11 @@ async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,token
         for soal in tugas_baru.daftar_soal:
             if isinstance(soal, schema.SoalABCKunci):
                 db_soal = crud.create_soal_abc(db, soal.pertanyaan, db_tugas.id)
-                print("+++++++++++++++++++++++++++++", soal.pilihan_jawaban)
                 for i in range(len(soal.pilihan_jawaban)):
-                    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
                     string_jawaban=soal.pilihan_jawaban[i]
                     jawaban = crud.create_jawaban_abc(db, db_soal.id, string_jawaban)
-                    print(string_jawaban,"==========================================================")
                     if soal.index_jawaban_benar == i:
                         db_soal = crud.update_soal_abc_add_kunci_by_ids(db, db_soal.id, jawaban.id)
-                    print("/////////////////////////////////////////////")
             elif isinstance(soal, schema.SoalBenarSalah):
                 db_soal = crud.create_soal_benar_salah(db, soal.pertanyaan, db_tugas.id,\
                                                        soal.pernyataan_pada_benar, \
@@ -491,7 +487,7 @@ async def menghapus_tugas_yang_ada_pada_video(id_video:int = Form(...), token:sc
         raise HTTPException(status_code=400, detail="Invalid id")
     
     
-@app.get("/video/tugas", )
+@app.get("/video/tugas", response_model=schema.ReadTugasPembelajaran)
 async def mengakses_soal_yang_ada_pada_video(id_video:int = Form(...), \
                                              token:schema.TokenData=Depends(auth.get_token_data), \
                                              db=Depends(get_db)):
@@ -536,3 +532,104 @@ async def mengakses_soal_yang_ada_pada_video(id_video:int = Form(...), \
         
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Invalid id")
+
+@app.get("/video/tugas/edit")
+async def lihat_soal_pada_video_untuk_mentor(id_video:int = Form(...), \
+                                             token:schema.TokenData=Depends(auth.get_token_data), \
+                                             db=Depends(get_db)):
+    try:
+        auth.check_if_user_is_mentor(db, token.id)
+
+        db_video = crud.read_video_pembelajaran_metadata_by_id(db, id_video)
+
+        if(db_video.creator_id != token.id):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="creator id missmatch")
+
+        if db_video.id_tugas == None:
+            raise HTTPException(status_code=400, detail="Tidak ada tugas pada video ini")
+        
+        tugas_pembelajaran = crud.read_tugas_pembelajaran_by_id(db,db_video.id_tugas )
+        daftar_soal=[]
+        for soal in tugas_pembelajaran.soal:
+            if isinstance(soal, models.SoalABC):
+                _daftar_jawaban = []
+                for jawaban in soal.pilihan:
+                    _daftar_jawaban.append(jawaban.jawaban)
+                daftar_soal.append(schema.SoalABCKunci(pertanyaan=soal.pertanyaan, \
+                                                       pilihan_jawaban=_daftar_jawaban,\
+                                                       index_jawaban_benar=soal.kunci))
+            elif isinstance(soal, models.SoalBenarSalah):
+                _daftar_jawaban = []
+                for jawaban in soal.pilihan:
+                    _daftar_jawaban.append(schema.JawabanBenarSalahKunci(isi_jawaban=jawaban.jawaban, \
+                                                                         jawaban_pernyataan_yang_benar=jawaban.kunci))
+                daftar_soal.append(schema.SoalBenarSalah(pertanyaan=soal.pertanyaan, \
+                                                         pernyataan_pada_benar=soal.benar,\
+                                                         pernyataan_pada_salah=soal.salah, \
+                                                         daftar_jawaban=_daftar_jawaban)) 
+            elif isinstance(soal, models.SoalMultiPilih):
+                _daftar_jawaban = []
+                for jawaban in soal.pilihan:
+                    _daftar_jawaban.append(schema.JawabanMultiPilihKunci(isi_jawaban=jawaban.jawaban, \
+                        jawaban_ini_benar=jawaban.benar))
+
+                daftar_soal.append(schema.SoalMultiPilih(pertanyaan=soal.pertanyaan, pilihan=_daftar_jawaban))
+        return schema.ReadTugasPembelajaran(
+            judul=tugas_pembelajaran.judul,
+            jumlah_attempt=tugas_pembelajaran.attempt_allowed,
+            daftar_soal=daftar_soal,
+            id=tugas_pembelajaran.id,
+            time_created=tugas_pembelajaran.time_created,
+            time_updated=tugas_pembelajaran.time_updated if tugas_pembelajaran.time_updated \
+                else tugas_pembelajaran.time_created
+        )
+            
+        
+    except NoResultFound:
+        raise HTTPException(status_code=400, detail="Invalid id")
+
+async def kirim_jawaban_tugas(format_jawaban:schema.format_kirim_jawaban_tugas,\
+                              token: schema.TokenData = Depends(auth.get_token_data),\
+                              db:Session = Depends(get_db)):
+    try:
+        db_tugas = crud.read_tugas_pembelajaran_by_id(db, format_jawaban.id_tugas)
+        if(len(crud.read_attempt_mengerjakan_tugas(db, db_tugas.id, token.id)) >= db_tugas.attempt_allowed):
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Max attempt reached")
+        
+        if(db_tugas.id_video is None):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST)
+        
+        jumlah_soal = len(db_tugas.soal)
+        if( jumlah_soal != len(format_jawaban.jawaban)):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Length missmatch")
+        
+        jawaban_benar = 0,0
+
+        for i in range(jumlah_soal):
+            soal = db_tugas.soal[i]
+            if isinstance(soal, models.SoalABC):
+                if(soal.kunci == int(format_jawaban.jawaban[i])):
+                    jawaban_benar += 1,0
+            elif isinstance(soal, models.SoalBenarSalah):
+                jumlah_jawaban = len(soal.pilihan)
+                yang_benar = 0
+                for j in range(jumlah_jawaban):
+                    if(int(soal.pilihan[j].kunci) == int(format_jawaban.jawaban[i][j])):
+                        yang_benar += 1
+                jawaban_benar += yang_benar/jumlah_jawaban
+
+            elif isinstance(soal, models.SoalMultiPilih):
+                jumlah_jawaban = len(soal.pilihan)
+                yang_benar = 0
+                for j in range(jumlah_jawaban):
+                    if(int(soal.pilihan[j].benar) == int(format_jawaban.jawaban[i][j])):
+                        yang_benar += 1
+                jawaban_benar += yang_benar/jumlah_jawaban
+        nilai:float = jawaban_benar/jumlah_soal
+        db_attempt = crud.create_new_attempt_mengerjakan_tugas(db, token.id, db_tugas.id, nilai,\
+                     format_jawaban.waktu_mulai, format_jawaban.waktu_selesai)
+
+        return db_attempt
+
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid id")

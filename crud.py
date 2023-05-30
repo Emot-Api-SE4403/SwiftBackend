@@ -395,3 +395,21 @@ def delete_tugas_pembelajaran_by_id(db: Session, tugas_pembelajaran_id: int):
 def read_tugas_pembelajaran_by_id(db:Session, id_tugas):
     return db.query(models.TugasPembelajaran).filter(models.TugasPembelajaran.id == id_tugas).one()
 
+def read_attempt_mengerjakan_tugas(db:Session, id_tugas, id_pelajar):
+    return db.query(models.AttemptMengerjakanTugas)\
+           .filter(models.AttemptMengerjakanTugas.id_pelajar == id_pelajar, \
+                   models.AttemptMengerjakanTugas.id_tugas == id_tugas).all()
+
+def create_new_attempt_mengerjakan_tugas(db:Session, id_pelajar, id_tugas, nilai, start, stop):
+    db_attemp = models.AttemptMengerjakanTugas(
+        id_pelajar = id_pelajar,
+        id_tugas = id_tugas,
+        nilai = nilai,
+        waktu_mulai=start,
+        waktu_selesai=stop
+    )
+    db.add(db_attemp)
+    db.commit()
+    return db_attemp
+
+
