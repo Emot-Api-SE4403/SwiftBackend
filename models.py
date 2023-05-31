@@ -108,7 +108,7 @@ class TugasPembelajaran(Base):
     # Relation
     video = relationship(VideoPembelajaran, backref="tugas_pembelajaran", uselist=False, viewonly=True) # read tidak, post ada
     soal = relationship("Soal", backref="tugas_pembelajaran")
-    attemp = relationship("AttemptMengerjakanTugas", backref="tugas_pembelajaran")
+    attemp = relationship("AttemptMengerjakanTugas")
 
 class Soal(Base):
     __tablename__ = "soal"

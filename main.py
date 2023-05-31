@@ -588,6 +588,7 @@ async def lihat_soal_pada_video_untuk_mentor(id_video:int = Form(...), \
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Invalid id")
 
+@app.post("/video/tugas/kumpul")
 async def kirim_jawaban_tugas(format_jawaban:schema.format_kirim_jawaban_tugas,\
                               token: schema.TokenData = Depends(auth.get_token_data),\
                               db:Session = Depends(get_db)):
@@ -596,23 +597,26 @@ async def kirim_jawaban_tugas(format_jawaban:schema.format_kirim_jawaban_tugas,\
         if(len(crud.read_attempt_mengerjakan_tugas(db, db_tugas.id, token.id)) >= db_tugas.attempt_allowed):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Max attempt reached")
         
-        if(db_tugas.id_video is None):
+        if(db_tugas.video is None):
             raise HTTPException(status.HTTP_400_BAD_REQUEST)
         
         jumlah_soal = len(db_tugas.soal)
         if( jumlah_soal != len(format_jawaban.jawaban)):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Length missmatch")
         
-        jawaban_benar = 0,0
+        jawaban_benar = 0.0
 
         for i in range(jumlah_soal):
             soal = db_tugas.soal[i]
             if isinstance(soal, models.SoalABC):
+                
                 if(soal.kunci == int(format_jawaban.jawaban[i])):
-                    jawaban_benar += 1,0
+                    jawaban_benar += 1.0
             elif isinstance(soal, models.SoalBenarSalah):
                 jumlah_jawaban = len(soal.pilihan)
                 yang_benar = 0
+                if(len(soal.pilihan) != len(format_jawaban.jawaban[i])):
+                    raise HTTPException(status.HTTP_400_BAD_REQUEST,"Length not match")
                 for j in range(jumlah_jawaban):
                     if(int(soal.pilihan[j].kunci) == int(format_jawaban.jawaban[i][j])):
                         yang_benar += 1
@@ -621,6 +625,8 @@ async def kirim_jawaban_tugas(format_jawaban:schema.format_kirim_jawaban_tugas,\
             elif isinstance(soal, models.SoalMultiPilih):
                 jumlah_jawaban = len(soal.pilihan)
                 yang_benar = 0
+                if(len(soal.pilihan) != len(format_jawaban.jawaban[i])):
+                    raise HTTPException(status.HTTP_400_BAD_REQUEST,"Length not match")
                 for j in range(jumlah_jawaban):
                     if(int(soal.pilihan[j].benar) == int(format_jawaban.jawaban[i][j])):
                         yang_benar += 1

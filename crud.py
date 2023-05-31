@@ -401,6 +401,9 @@ def read_attempt_mengerjakan_tugas(db:Session, id_tugas, id_pelajar):
                    models.AttemptMengerjakanTugas.id_tugas == id_tugas).all()
 
 def create_new_attempt_mengerjakan_tugas(db:Session, id_pelajar, id_tugas, nilai, start, stop):
+    if(nilai//10 == 0):
+        nilai = nilai * 10
+    
     db_attemp = models.AttemptMengerjakanTugas(
         id_pelajar = id_pelajar,
         id_tugas = id_tugas,
@@ -410,6 +413,7 @@ def create_new_attempt_mengerjakan_tugas(db:Session, id_pelajar, id_tugas, nilai
     )
     db.add(db_attemp)
     db.commit()
+    db.refresh(db_attemp)
     return db_attemp
 
 
