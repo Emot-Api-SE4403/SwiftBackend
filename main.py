@@ -383,7 +383,8 @@ async def menghapus_tugas_yang_ada_pada_video(id_video:int = Form(...), token:sc
 
         if db_video.id_tugas == None:
             raise HTTPException(status_code=400, detail="Tidak ada tugas pada video ini")
-        crud.delete_tugas_pembelajaran_by_id(db, db_video.id_tugas) # TODO
+        crud.delete_attemp_pengerjaan_tugas_by_id_tugas(db, db_video.id_tugas)
+        crud.delete_tugas_pembelajaran_by_id(db, db_video.id_tugas) 
         return(f"Tugas berhasil dihapus")
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Invalid id")
@@ -434,6 +435,7 @@ async def mengakses_soal_yang_ada_pada_video(id_video:int = Form(...), \
         
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Invalid id")
+
 
 @app.get("/video/tugas/edit")
 async def lihat_soal_pada_video_untuk_mentor(id_video:int = Form(...), \

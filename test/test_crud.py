@@ -446,36 +446,36 @@ def test_read_materi_pembelajaran_filter_by():
     materi3 = models.Materi(id=3, mapel=models.DaftarMapelSkolastik(3))    
 
     # Test case 1: Filter by id_materi
-    db.query.return_value.filter.return_value.all.return_value = [materi2]
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [materi2]
     result1 = read_materi_pembelajaran_filter_by(db, id_materi=2)
     assert len(result1) == 1
     assert result1[0].id == 2
 
     # Test case 2: Filter by id_mapel
-    db.query.return_value.filter.return_value.all.return_value = [materi1]
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [materi1]
     result2 = read_materi_pembelajaran_filter_by(db, id_mapel=1)
     assert len(result2) == 1
     assert result2[0].id == 1
 
     # Test case 3: Filter by nama_mapel
-    db.query.return_value.filter.return_value.all.return_value = [materi2]
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [materi2]
     result3 = read_materi_pembelajaran_filter_by(db, nama_mapel="penalaran_matematika")
     assert len(result3) == 1
     assert result3[0].id == 2
 
     # Test case 4: Filter by mapel
-    db.query.return_value.filter.return_value.all.return_value = [materi3]
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [materi3]
     result4 = read_materi_pembelajaran_filter_by(db, mapel=models.DaftarMapelSkolastik(3))
     assert len(result4) == 1
     assert result4[0].id == 3
 
     # Test case 5: No filters
-    db.query.return_value.all.return_value = [materi1, materi2, materi3]
+    db.query.return_value.options.return_value.all.return_value = [materi1, materi2, materi3]
     result5 = read_materi_pembelajaran_filter_by(db)
     assert len(result5) == 3
 
     # Test case 6: Pagination
-    db.query.return_value.offset.return_value\
+    db.query.return_value.options.return_value.offset.return_value\
         .limit.return_value.all.return_value = [materi3]
     result6 = read_materi_pembelajaran_filter_by(db, limit=2, page=2)
     assert len(result6) == 1
@@ -526,6 +526,23 @@ def test_update_materi_pembelajaran_by_id_with_mock():
     assert materi.nama == nama_materi
     assert materi.mapel == models.DaftarMapelSkolastik[mapel_str]
     assert result_str == materi
+
+
+
+def test_delete_attemp_pengerjaan_tugas_by_id_tugas():
+    # Create a mock session
+    db_mock = MagicMock(spec=Session)
+
+    # Configure the query mock
+    db_mock.query.return_value.filter.return_value.delete.return_value = 2
+
+    # Test case: Delete attempts by id_tugas
+    result = delete_attemp_pengerjaan_tugas_by_id_tugas(db_mock, id_tugas=1)
+    db_mock.query.assert_called_once_with(models.AttemptMengerjakanTugas)
+    db_mock.query.return_value.filter.return_value.delete.assert_called_once()
+    db_mock.commit.assert_called_once()
+    assert result == 2
+
 
 def test_delete_materi_pembelajaran_by_id_with_mock():
     # Create a mock session

@@ -367,6 +367,10 @@ def update_video_pembelajaran_remove_tugas(db:Session, id_video:int):
     db_video.id_tugas = None
     db.commit()
 
+def delete_attemp_pengerjaan_tugas_by_id_tugas(db:Session, id_tugas:int):
+    row = db.query(models.AttemptMengerjakanTugas).filter(models.AttemptMengerjakanTugas.id_tugas).delete()
+    db.commit()
+    return row
 
 def delete_tugas_pembelajaran_by_id(db: Session, tugas_pembelajaran_id: int):
     # Get the TugasPembelajaran object
