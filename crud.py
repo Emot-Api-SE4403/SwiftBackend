@@ -292,19 +292,11 @@ def create_jawaban_abc(db:Session, id_soal, jawaban):
     return db_jawaban
 
 def update_soal_abc_add_kunci_by_ids(db:Session, id_soal, id_kunci):
-    print("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 1")
-
     soal = db.query(models.SoalABC).filter(models.SoalABC.id == id_soal).one()
-    print("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 2")
-
     soal.kunci = id_kunci
-    print("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 3")
 
     db.commit()
-    print("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy 4")
-
     db.refresh(soal)
-    print("okokokokokokokokokokokokokokokokokokokokokokok")
     return soal
 
 def create_soal_benar_salah(db:Session, pertanyaan, id_tugas, pernyataan_true, pernyataan_false):

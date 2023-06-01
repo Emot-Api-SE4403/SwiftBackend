@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 from crud import *
@@ -727,4 +727,322 @@ def test_delete_video_pembelajaran_by_id_with_mock():
     session.query.return_value.filter.return_value.delete.assert_called_once()
     session.commit.assert_called_once()
     assert result == "ok"
+
+def test_create_tugas_pembelajaran():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Create test data
+    judul = "Test Tugas"
+    attempt = 3
+    id_video = 12345
+
+    # Configure the mock session to return the test video
+    video = models.VideoPembelajaran(id=id_video)
+    session.query.return_value.filter.return_value.one.return_value = video
+
+    # Call the function being tested
+    result = create_tugas_pembelajaran(session, judul, attempt, id_video)
+
+    # Assertions
+    session.add.assert_called_once()  # Verify that session.add was called
+    session.commit.assert_called()  # Verify that session.commit was called
+    db_tugas = session.add.call_args[0][0]  # Get the TugasPembelajaran object passed to session.add
+    assert db_tugas.judul == judul  # Verify that the judul is set correctly
+    assert db_tugas.attempt_allowed == attempt  # Verify that the attempt_allowed is set correctly
+    assert video.id_tugas == db_tugas.id  # Verify that the id_tugas of the video is updated
+
+    assert result == db_tugas  # Verify that the returned value is the TugasPembelajaran object
+
+def test_create_soal_abc():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Create test data
+    pertanyaan = "Test Pertanyaan"
+    id_tugas = 12345
+
+    # Call the function being tested
+    result = create_soal_abc(session, pertanyaan, id_tugas)
+
+    # Assertions
+    session.add.assert_called_once()  # Verify that session.add was called
+    session.commit.assert_called_once()  # Verify that session.commit was called
+    db_soal = session.add.call_args[0][0]  # Get the SoalABC object passed to session.add
+    assert db_soal.pertanyaan == pertanyaan  # Verify that the pertanyaan is set correctly
+    assert db_soal.type == "pilihan_ganda"  # Verify that the type is set correctly
+    assert db_soal.id_tugas == id_tugas  # Verify that the id_tugas is set correctly
+
+    assert result == db_soal
+
+
+def test_update_soal_abc_add_kunci_by_ids():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Create a test soal and kunci
+    soal_id = 1
+    kunci_id = 1
+
+    # Mock the query and filter methods
+    query_mock = session.query.return_value
+    filter_mock = query_mock.filter.return_value
+    soal_mock = filter_mock.one.return_value
+
+    # Call the function being tested
+    result = update_soal_abc_add_kunci_by_ids(session, soal_id, kunci_id)
+
+    # Assertions
+    filter_mock.one.assert_called_once()
+    soal_mock.kunci = kunci_id
+    session.commit.assert_called_once()
+    session.refresh.assert_called_once()
+
+    # Assert the result
+    assert result == soal_mock
+
+def test_create_soal_benar_salah():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    pertanyaan = "Test pertanyaan"
+    id_tugas = 1
+    pernyataan_true = "Pernyataan benar"
+    pernyataan_false = "Pernyataan salah"
+
+    # Call the function being tested
+    result = create_soal_benar_salah(session, pertanyaan, id_tugas, pernyataan_true, pernyataan_false)
+
+    # Assertions
+    session.add.assert_called_once()
+    session.commit.assert_called_once()
+    session.refresh.assert_called_once()
+
+def test_create_jawaban_benar_salah():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    id_soal = 1
+    jawaban = "Jawaban"
+    pernyataan_yg_benar = True
+
+    # Call the function being tested
+    result = create_jawaban_benar_salah(session, id_soal, jawaban, pernyataan_yg_benar)
+
+    # Assertions
+    session.add.assert_called_once()
+    session.commit.assert_called_once()
+    session.refresh.assert_called_once()
+
+
+    assert result.id_soal == id_soal
+    assert result.jawaban == jawaban
+    assert result.kunci == pernyataan_yg_benar
+
+def test_create_soal_multi_pilih():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    pertanyaan = "Pertanyaan"
+    id_tugas = 1
+
+    # Call the function being tested
+    result = create_soal_multi_pilih(session, pertanyaan, id_tugas)
+
+    # Assertions
+    session.add.assert_called_once()
+    session.commit.assert_called_once()
+    session.refresh.assert_called_once()
+
+    assert result.pertanyaan == pertanyaan
+    assert result.type == "multi_pilih"
+    assert result.id_tugas == id_tugas
+
+def test_create_jawaban_multi_pilih():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    id_soal = 1
+    jawaban = "Jawaban"
+    benar = True
+
+    # Call the function being tested
+    result = create_jawaban_multi_pilih(session, id_soal, jawaban, benar)
+
+    # Assertions
+    session.add.assert_called_once()
+    session.commit.assert_called_once()
+    session.refresh.assert_called_once()
+    assert result.id_soal == id_soal
+    assert result.jawaban == jawaban
+    assert result.benar == benar
+
+
+def test_update_video_pembelajaran_remove_tugas():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    id_video = 1
+
+    # Call the function being tested
+    update_video_pembelajaran_remove_tugas(session, id_video)
+
+    # Assertions
+    session.query.assert_called_once_with(models.VideoPembelajaran)
+    session.query.return_value.filter.return_value.one.assert_called_once()
+    assert session.query.return_value.filter.return_value.one.return_value.id_tugas is None
+
+def test_delete_tugas_pembelajaran_by_id():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    tugas_pembelajaran_id = 1
+
+    # Create a mock TugasPembelajaran object
+    tugas_pembelajaran = MagicMock(spec=models.TugasPembelajaran)
+    tugas_pembelajaran.video.id = 1
+
+    # Create mock Soal objects
+    soal_abc = MagicMock(spec=models.SoalABC)
+    soal_benar_salah = MagicMock(spec=models.SoalBenarSalah)
+    soal_multi_pilih = MagicMock(spec=models.SoalMultiPilih)
+
+    # Assign Soal objects to TugasPembelajaran's soal attribute
+    tugas_pembelajaran.soal = [soal_abc, soal_benar_salah, soal_multi_pilih]
+    soal_abc.pilihan = [MagicMock(spec=models.JawabanABC)]
+    soal_benar_salah.pilihan = [MagicMock(spec=models.JawabanBenarSalah)]
+    soal_multi_pilih.pilihan = [MagicMock(spec=models.JawabanMultiPilih)]
+
+    # Mock the query method to return the TugasPembelajaran object
+    session.query.return_value.get.return_value = tugas_pembelajaran
+
+    # Call the function being tested
+    result = delete_tugas_pembelajaran_by_id(session, tugas_pembelajaran_id)
+
+    # Assertions
+    session.query.return_value.get.assert_called_once_with(tugas_pembelajaran_id)
+    assert session.query.return_value.get.return_value.video.id == tugas_pembelajaran_id
+    assert session.delete.call_count == 7  # 1 for TugasPembelajaran, 3 for Soal objects, and 3 for each Answers
+    assert session.commit.called_once()
+    assert result is True
+
+def test_delete_tugas_pembelajaran_by_id_not_found():
+    session = MagicMock(spec=Session)
+    tugas_pembelajaran_id = 1
+    session.query.return_value.get.return_value = None
+
+    result = delete_tugas_pembelajaran_by_id(session, tugas_pembelajaran_id)
+
+    session.query.return_value.get.assert_called_once_with(tugas_pembelajaran_id)
+    assert result is False
+
+
+def test_create_jawaban_abc():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    id_soal = 1
+    jawaban = "Option A"
+
+    # Call the function being tested
+    result = create_jawaban_abc(session, id_soal, jawaban)
+
+    # Assertions
+    session.add.assert_called_once()  # Verify that session.add was called
+    session.commit.assert_called_once()  # Verify that session.commit was called
+    session.refresh.assert_called_once_with(result)  # Verify that session.refresh was called with the result
+    assert result.id_soal == id_soal  # Verify the id_soal value of the created JawabanABC object
+    assert result.jawaban == jawaban  # Verify the jawaban value of the created JawabanABC object
+
+def test_read_tugas_pembelajaran_by_id():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    id_tugas = 1
+    mock_tugas = MagicMock(spec=models.TugasPembelajaran)
+
+    # Configure the mock session to return the mock_tugas
+    session.query.return_value.filter.return_value.one.return_value = mock_tugas
+
+    # Call the function being tested
+    result = read_tugas_pembelajaran_by_id(session, id_tugas)
+
+    # Assertions
+    session.query.return_value.filter.return_value.one.assert_called_once_with()
+    assert result == mock_tugas
+
+def test_read_attempt_mengerjakan_tugas():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    id_tugas = 1
+    id_pelajar = 1
+    mock_attempts = [MagicMock(spec=models.AttemptMengerjakanTugas), MagicMock(spec=models.AttemptMengerjakanTugas)]
+
+    # Configure the mock session to return the mock_attempts
+    session.query.return_value.filter.return_value.all.return_value = mock_attempts
+
+    # Call the function being tested
+    result = read_attempt_mengerjakan_tugas(session, id_tugas, id_pelajar)
+
+    # Assertions
+    session.query.return_value.filter.return_value.all.assert_called_once_with()
+    assert result == mock_attempts
+
+def test_create_new_attempt_mengerjakan_tugas():
+    # Create a mock session
+    session = MagicMock(spec=Session)
+
+    # Define test data
+    id_pelajar = 1
+    id_tugas = 1
+    nilai = 8
+    start = datetime.datetime.now()
+    stop = datetime.datetime.now()
+
+    # Call the function being tested
+    with patch("datetime.datetime") as mock_datetime:
+        mock_datetime.now.side_effect = [start, stop]
+        result = create_new_attempt_mengerjakan_tugas(session, id_pelajar, id_tugas, nilai, start, stop)
+
+    # Assertions
+    session.add.assert_called_once_with(result)
+    session.commit.assert_called_once()
+    session.refresh.assert_called_once_with(result)
+
+
+def test_read_nilai_tugas_filter_by():
+    # Create a mock Session object
+    db = MagicMock()
+
+    # Set up the test data
+    id_pelajar = 1
+    id_tugas = 2
+    limit = 10
+    page = 1
+
+    # Set up the expected return value
+    expected_result = [
+        MagicMock(spec=models.AttemptMengerjakanTugas),
+        MagicMock(spec=models.AttemptMengerjakanTugas),
+        MagicMock(spec=models.AttemptMengerjakanTugas)
+    ]
+    db.query.return_value.all.return_value = expected_result
+
+    # Call the function under test
+    result = read_nilai_tugas_filter_by(db, id_pelajar=id_pelajar, id_tugas=id_tugas, limit=limit, page=page)
+
+    # Assert that the query, filter, offset, and limit calls were made with the expected arguments
+    db.query.assert_called_once_with(models.AttemptMengerjakanTugas)
+    db.query.return_value.filter.assert_called()
+
 
