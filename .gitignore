@@ -5,7 +5,7 @@
 /__pycache__
 /.pytest_cache
 /test/__pycache__
-/tes/static/*
+/test/static/*
 
 # env file
 .env
