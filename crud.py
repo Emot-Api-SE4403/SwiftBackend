@@ -417,3 +417,24 @@ def create_new_attempt_mengerjakan_tugas(db:Session, id_pelajar, id_tugas, nilai
     return db_attemp
 
 
+def read_nilai_tugas_filter_by(db:Session, **kwargs):
+    id_pelajar = kwargs.get('id_pelajar', None)
+    id_tugas = kwargs.get('id_tugas', None)
+    limit = kwargs.get('limit', None) 
+    page = kwargs.get('page', None) 
+
+    query = db.query(models.AttemptMengerjakanTugas)
+
+    if id_pelajar:
+        query = query.filter(models.AttemptMengerjakanTugas.id_pelajar == id_pelajar)
+    if id_tugas:
+        query = query.filter(models.AttemptMengerjakanTugas.id_tugas == id_tugas)
+
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+        query = query.limit(limit)
+
+    return  query.all()
+    

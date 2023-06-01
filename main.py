@@ -639,3 +639,13 @@ async def kirim_jawaban_tugas(format_jawaban:schema.format_kirim_jawaban_tugas,\
 
     except NoResultFound:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid id")
+    
+@app.get("/video/tugas/nilai")
+async def melihat_nilai_pelajar(id_pelajar:int = None, id_tugas:int = None, limit:int = None, page:int=None, \
+        token:Union[schema.TokenData, schema.AdminTokenData]=Depends(auth.get_token_dynamic),db:Session = Depends(get_db) ):
+    try:
+        return crud.read_nilai_tugas_filter_by(db=db, id_tugas=id_tugas, id_pelajar=id_pelajar, limit=limit, page=page)    
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        
+

@@ -118,3 +118,30 @@ async def get_admin_token(token: str = Depends(oauth2_scheme)):
         return schema.AdminTokenData(id=id)
     except JWTError:
         raise credentials_exception
+     
+async def get_token_dynamic(token: str = Depends(oauth2_scheme)) -> Union[schema.TokenData, schema.AdminTokenData]:
+    """
+    Fungsi yang memungkinkan untuk membaca kedua jenis token dari user dan admin.
+    mengembalikan Union[AdminTokenData, TokenData]
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        uid = payload.get("id")
+
+        if id is None:
+            raise credentials_exception
+        
+        try:
+            uid = int(uid)
+            return schema.TokenData(id=uid)
+        except ValueError:    
+            return schema.AdminTokenData(id=uid)
+        
+    except JWTError:
+        raise credentials_exception
