@@ -368,7 +368,7 @@ def update_video_pembelajaran_remove_tugas(db:Session, id_video:int):
     db.commit()
 
 def delete_attemp_pengerjaan_tugas_by_id_tugas(db:Session, id_tugas:int):
-    row = db.query(models.AttemptMengerjakanTugas).filter(models.AttemptMengerjakanTugas.id_tugas).delete()
+    row = db.query(models.AttemptMengerjakanTugas).filter(models.AttemptMengerjakanTugas.id_tugas == id_tugas).delete()
     db.commit()
     return row
 
