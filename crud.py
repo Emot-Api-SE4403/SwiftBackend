@@ -2,7 +2,7 @@ import datetime
 from typing import List, Union
 import secrets
 from fastapi import UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from dotenv import load_dotenv
 import os
 from database import s3
@@ -177,7 +177,7 @@ def read_materi_pembelajaran_filter_by(db:Session, **kwargs):
     limit = kwargs.get('limit', None)
     page = kwargs.get('page', None)
 
-    query = db.query(models.Materi)
+    query = db.query(models.Materi).options(joinedload(models.Materi.video_pembelajaran))
 
     for key, value in kwargs.items():
         if value is not None:

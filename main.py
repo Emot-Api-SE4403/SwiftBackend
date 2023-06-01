@@ -245,7 +245,7 @@ async def upload_video_materi_baru(
     
     # check jika id materi valid
     try:
-        crud.read_materi_pembelajaran_by_id(db, id_materi)
+        crud.read_materi_pembelajaran_filter_by(db, id_materi=id_materi)
         crud.create_video_pembelajaran(db, token_data.id, judul_video, id_materi, file)
 
     except NoResultFound:
