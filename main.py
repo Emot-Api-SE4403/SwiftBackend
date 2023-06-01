@@ -660,3 +660,33 @@ async def read_daftar_materi(
             )
     except Exception as e:
         raise HTTPException(500, f"something went wrong, details: {str(e)}")
+    
+@app.get("/materi/tugas/list")
+async def read_daftar_tugas(
+        id_tugas:Optional[int] = Query(None, description="id materi yang dicari"), 
+        newest:Optional[bool] = Query(True, description="mengurutkan dari yang terbaru"), 
+        id_video:Optional[int] = Query(None, description="filter materi dengan id video"), 
+        judul:Optional[str] = Query(None, description="filter materi dengan judul tugas"), 
+        mapel:Optional[str] = Query(None, description="filter materi dengan nama mapel"),
+        id_materi: Optional[int] = Query(None, description="filter materi dengan id materi"), 
+        id_creator: Optional[int] = Query(None, description="filter materi dengan id mentor"),
+        limit: Optional[int] = Query(None, description="Limit the number of results"),
+        page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+        _:Union[schema.TokenData, schema.AdminTokenData] = Depends(auth.get_token_dynamic),
+        db: Session = Depends(get_db)
+        ):
+    try:
+        return crud.read_tugas_pembelajaran_filter_by(
+            db,
+            id_tugas=id_tugas,
+            newest=newest,
+            id_video=id_video,
+            mapel=mapel,
+            judul=judul,
+            id_materi=id_materi,
+            id_creator=id_creator,
+            limit=limit,
+            page=page
+            )
+    except Exception as e:
+        raise HTTPException(500, f"something went wrong, details: {str(e)}")

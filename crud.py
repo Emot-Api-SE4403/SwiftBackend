@@ -473,3 +473,59 @@ def read_all_video_pembelajaran(db: Session, **kwargs):
         query = query.limit(limit)
 
     return query.all()
+
+
+def read_tugas_pembelajaran_filter_by(db:Session, newest: bool, **kwargs):
+    limit = kwargs.get('limit', None)
+    page = kwargs.get('page', None)
+
+    query = db.query(models.TugasPembelajaran)
+
+    # Filter conditions based on provided parameters
+    """
+            id_tugas=id_tugas,
+            newest=newest,
+            id_video=id_video,
+            mapel=mapel,
+            judul=judul,
+            id_materi=id_materi,
+            id_creator=id_creator,
+    """
+    for key, value in kwargs.items():
+        if value is not None:
+            if key == 'id_tugas':
+                query = query.filter(models.TugasPembelajaran.id == value)
+            elif key == 'judul':
+                query = query.filter(models.TugasPembelajaran.judul == value)
+            elif key == 'id_video':
+                query = query.filter(models.TugasPembelajaran.video.has(models.VideoPembelajaran.id == value) )
+            elif key == 'mapel':
+                query = query.filter(models.TugasPembelajaran.video.has(
+                    models.VideoPembelajaran.materi.has(
+                        models.Materi.mapel == models.DaftarMapelSkolastik[value]
+                    )
+                ))
+            elif key == 'id_materi':
+                query = query.filter(models.TugasPembelajaran.video.has(
+                    models.VideoPembelajaran.materi.has(
+                        models.Materi.id == value
+                    )
+                ))
+            elif key == 'id_materi':
+                query = query.filter(models.TugasPembelajaran.video.has(
+                    models.VideoPembelajaran.creator_id == value
+                ))
+
+    if newest:
+        query = query.order_by(models.TugasPembelajaran.time_created.desc())
+    else:
+        query = query.order_by(models.TugasPembelajaran.time_created.asc())
+
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+
+        query = query.limit(limit)
+
+    return query.all()
