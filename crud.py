@@ -2,7 +2,7 @@ import datetime
 from typing import List, Union
 import secrets
 from fastapi import UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from dotenv import load_dotenv
 import os
 from database import s3
@@ -173,21 +173,33 @@ def create_materi_pembelajaran(db:Session, mapel: Union[str, int, models.DaftarM
     db.refresh(db_materi)
     return db_materi
     
-def read_materi_pembelajaran_all_data(db: Session):
-    return db.query(models.Materi).all()
+def read_materi_pembelajaran_filter_by(db:Session, **kwargs):
+    limit = kwargs.get('limit', None)
+    page = kwargs.get('page', None)
 
-def read_materi_pembelajaran_by_id(db:Session, id:int):
-    return db.query(models.Materi).filter(models.Materi.id == id).one()
+    query = db.query(models.Materi).options(joinedload(models.Materi.video_pembelajaran))
 
-def read_materi_pembelajaran_by_mapel(db:Session,  mapel: Union[str, int, models.DaftarMapelSkolastik]):
-    if isinstance(mapel, int):
-        return db.query(models.Materi).filter(models.Materi.mapel == models.DaftarMapelSkolastik(mapel)).all()
-    elif isinstance(mapel, models.DaftarMapelSkolastik):
-        return db.query(models.Materi).filter(models.Materi.mapel == mapel).all()
-    elif isinstance(mapel, str):   
-        return db.query(models.Materi).filter(models.Materi.mapel == models.DaftarMapelSkolastik[mapel]).all()
-    else:
-        raise Exception("Unsupported type")
+    for key, value in kwargs.items():
+        if value is not None:
+            if key == "id_materi":
+                query = query.filter(models.Materi.id == value)
+            elif key == "id_mapel":
+                query = query.filter(models.Materi.mapel == models.DaftarMapelSkolastik(value))
+            elif key == "nama_mapel":
+                query = query.filter(models.Materi.mapel == models.DaftarMapelSkolastik[value])
+            elif key == "mapel":
+                query = query.filter(models.Materi.mapel == value)
+    
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+
+        query = query.limit(limit)
+
+    return query.all()
+
+
 
 def update_materi_pembelajaran_by_id(db: Session, id: int, mapel:Union[str,int], nama_materi: str):
     
@@ -355,6 +367,10 @@ def update_video_pembelajaran_remove_tugas(db:Session, id_video:int):
     db_video.id_tugas = None
     db.commit()
 
+def delete_attemp_pengerjaan_tugas_by_id_tugas(db:Session, id_tugas:int):
+    row = db.query(models.AttemptMengerjakanTugas).filter(models.AttemptMengerjakanTugas.id_tugas == id_tugas).delete()
+    db.commit()
+    return row
 
 def delete_tugas_pembelajaran_by_id(db: Session, tugas_pembelajaran_id: int):
     # Get the TugasPembelajaran object
@@ -430,3 +446,77 @@ def read_nilai_tugas_filter_by(db:Session, **kwargs):
 
     return  query.all()
     
+
+def read_all_video_pembelajaran(db: Session, **kwargs):
+    limit = kwargs.get('limit', None)
+    page = kwargs.get('page', None)
+
+    query = db.query(models.VideoPembelajaran)
+
+    # Filter conditions based on provided parameters
+    for key, value in kwargs.items():
+        if value is not None:
+            if key == 'id_mentor':
+                query = query.filter(models.VideoPembelajaran.creator_id == value)
+            elif key == 'judul':
+                query = query.filter(models.VideoPembelajaran.judul == value)
+            elif key == 'id_materi':
+                query = query.filter(models.VideoPembelajaran.id_materi == value)
+            elif key == 'id_tugas':
+                query = query.filter(models.VideoPembelajaran.id_tugas == value)
+
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+
+        query = query.limit(limit)
+
+    return query.all()
+
+
+def read_tugas_pembelajaran_filter_by(db:Session, newest: bool= True, **kwargs):
+    limit = kwargs.get('limit', None)
+    page = kwargs.get('page', None)
+
+    query = db.query(models.TugasPembelajaran)
+
+    # Filter conditions based on provided parameters
+    for key, value in kwargs.items():
+        if value is not None:
+            if key == 'id_tugas':
+                query = query.filter(models.TugasPembelajaran.id == value)
+            elif key == 'judul':
+                query = query.filter(models.TugasPembelajaran.judul == value)
+            elif key == 'id_video':
+                query = query.filter(models.TugasPembelajaran.video.has(models.VideoPembelajaran.id == value) )
+            elif key == 'mapel':
+                query = query.filter(models.TugasPembelajaran.video.has(
+                    models.VideoPembelajaran.materi.has(
+                        models.Materi.mapel == models.DaftarMapelSkolastik[value]
+                    )
+                ))
+            elif key == 'id_materi':
+                query = query.filter(models.TugasPembelajaran.video.has(
+                    models.VideoPembelajaran.materi.has(
+                        models.Materi.id == value
+                    )
+                ))
+            elif key == 'id_mentor':
+                query = query.filter(models.TugasPembelajaran.video.has(
+                    models.VideoPembelajaran.creator_id == value
+                ))
+
+    if newest:
+        query = query.order_by(models.TugasPembelajaran.time_created.desc())
+    else:
+        query = query.order_by(models.TugasPembelajaran.time_created.asc())
+
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+
+        query = query.limit(limit)
+
+    return query.all()

@@ -438,81 +438,49 @@ def test_create_materi_pembelajaran_with_mock():
     session.commit.assert_called_once()
     session.refresh.assert_called_once()
 
-def test_read_materi_pembelajaran_all_data_with_mock():
-    # Create a mock session
-    session = MagicMock(spec=Session)
+def test_read_materi_pembelajaran_filter_by():
+    db = MagicMock(spec=Session)
+    # Create some test data
+    materi1 = models.Materi(id=1, mapel=models.DaftarMapelSkolastik(1))
+    materi2 = models.Materi(id=2, mapel=models.DaftarMapelSkolastik(2))
+    materi3 = models.Materi(id=3, mapel=models.DaftarMapelSkolastik(3))    
 
-    # Mock data
-    materi_list = [
-        models.Materi(id=1, mapel=models.DaftarMapelSkolastik(1)),
-        models.Materi(id=2, mapel=models.DaftarMapelSkolastik(2)),
-        models.Materi(id=3, mapel=models.DaftarMapelSkolastik(3)),
-    ]
+    # Test case 1: Filter by id_materi
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [materi2]
+    result1 = read_materi_pembelajaran_filter_by(db, id_materi=2)
+    assert len(result1) == 1
+    assert result1[0].id == 2
 
-    # Configure the mock session to return the mock data
-    session.query.return_value.all.return_value = materi_list
+    # Test case 2: Filter by id_mapel
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [materi1]
+    result2 = read_materi_pembelajaran_filter_by(db, id_mapel=1)
+    assert len(result2) == 1
+    assert result2[0].id == 1
 
-    # Call the function being tested
-    result = read_materi_pembelajaran_all_data(session)
+    # Test case 3: Filter by nama_mapel
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [materi2]
+    result3 = read_materi_pembelajaran_filter_by(db, nama_mapel="penalaran_matematika")
+    assert len(result3) == 1
+    assert result3[0].id == 2
 
-    # Assertions
-    session.query.return_value.all.assert_called_once()
-    assert result == materi_list
+    # Test case 4: Filter by mapel
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [materi3]
+    result4 = read_materi_pembelajaran_filter_by(db, mapel=models.DaftarMapelSkolastik(3))
+    assert len(result4) == 1
+    assert result4[0].id == 3
 
+    # Test case 5: No filters
+    db.query.return_value.options.return_value.all.return_value = [materi1, materi2, materi3]
+    result5 = read_materi_pembelajaran_filter_by(db)
+    assert len(result5) == 3
 
-def test_read_materi_pembelajaran_by_id_with_mock():
-    # Create a mock session
-    session = MagicMock(spec=Session)
+    # Test case 6: Pagination
+    db.query.return_value.options.return_value.offset.return_value\
+        .limit.return_value.all.return_value = [materi3]
+    result6 = read_materi_pembelajaran_filter_by(db, limit=2, page=2)
+    assert len(result6) == 1
+    assert result6[0].id == 3
 
-    # Mock data
-    materi_id = 1
-    materi = models.Materi(id=materi_id, mapel=models.DaftarMapelSkolastik(1))
-
-    # Configure the mock session to return the mock data
-    session.query.return_value.filter.return_value.one.return_value = materi
-
-    # Call the function being tested
-    result = read_materi_pembelajaran_by_id(session, materi_id)
-
-    # Assertions
-    session.query.return_value.filter.return_value.one.assert_called_once()
-    assert result == materi
-
-
-def test_read_materi_pembelajaran_by_mapel_with_mock():
-    # Create a mock session
-    session = MagicMock(spec=Session)
-
-    # Mock data
-    mapel_int = 1
-    mapel_str = "kuantitatif"
-    mapel = models.DaftarMapelSkolastik(1)
-    materi_list = [
-        models.Materi(id=1, mapel=models.DaftarMapelSkolastik(1)),
-        models.Materi(id=2, mapel=models.DaftarMapelSkolastik(1)),
-    ]
-
-    # Configure the mock session to return the mock data
-    session.query.return_value.filter.return_value.all.return_value = materi_list
-    
-
-    # Call the function being tested with int mapel
-    result_int = read_materi_pembelajaran_by_mapel(session, mapel_int)
-
-    # Assertions for int mapel
-    assert result_int == materi_list
-
-    # Call the function being tested with string mapel
-    result_str = read_materi_pembelajaran_by_mapel(session, mapel_str)
-
-    # Assertions for string mapel
-    assert result_str == materi_list
-
-    # Call the function being tested with string mapel
-    result_enum = read_materi_pembelajaran_by_mapel(session, mapel)
-
-    # Assertions for string mapel
-    assert result_enum == materi_list
 
 
 def test_update_materi_pembelajaran_by_id_with_mock():
@@ -558,6 +526,23 @@ def test_update_materi_pembelajaran_by_id_with_mock():
     assert materi.nama == nama_materi
     assert materi.mapel == models.DaftarMapelSkolastik[mapel_str]
     assert result_str == materi
+
+
+
+def test_delete_attemp_pengerjaan_tugas_by_id_tugas():
+    # Create a mock session
+    db_mock = MagicMock(spec=Session)
+
+    # Configure the query mock
+    db_mock.query.return_value.filter.return_value.delete.return_value = 2
+
+    # Test case: Delete attempts by id_tugas
+    result = delete_attemp_pengerjaan_tugas_by_id_tugas(db_mock, id_tugas=1)
+    db_mock.query.assert_called_once_with(models.AttemptMengerjakanTugas)
+    db_mock.query.return_value.filter.return_value.delete.assert_called_once()
+    db_mock.commit.assert_called_once()
+    assert result == 2
+
 
 def test_delete_materi_pembelajaran_by_id_with_mock():
     # Create a mock session
@@ -1046,3 +1031,153 @@ def test_read_nilai_tugas_filter_by():
     db.query.return_value.filter.assert_called()
 
 
+def test_read_all_video_pembelajaran():
+    db = MagicMock()
+
+    # Create some test data
+    video1 = MagicMock(spec=models.VideoPembelajaran)
+    video1.id = 1
+    video1.creator_id = 1
+    video1.judul = "Video 1"
+    video1.id_materi = 1
+    video1.id_tugas = 1
+
+    video2 = MagicMock(spec=models.VideoPembelajaran)
+    video2.id = 2
+    video2.creator_id = 2
+    video2.judul = "Video 2"
+    video2.id_materi = 2
+    video2.id_tugas = 1
+
+    video3 = MagicMock(spec=models.VideoPembelajaran)
+    video3.id = 3
+    video3.creator_id = 1
+    video3.judul = "Video 3"
+    video3.id_materi = 1
+    video3.id_tugas = 2
+
+    # Test case 1: Filter by id_mentor
+    db.query.return_value.filter.return_value.all.return_value = [video1, video3]
+    result1 = read_all_video_pembelajaran(db, id_mentor=1)
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result1) == 2
+    assert result1[0].id == 1
+    assert result1[1].id == 3
+    db.reset_mock()
+
+
+    # Test case 2: Filter by judul
+    db.query.return_value.filter.return_value.all.return_value = [video2]
+    result2 = read_all_video_pembelajaran(db, judul="Video 2")
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result2) == 1
+    assert result2[0].id == 2
+    db.reset_mock()
+
+
+    # Test case 3: Filter by id_materi
+    db.query.return_value.filter.return_value.all.return_value = [video1, video3]
+    result3 = read_all_video_pembelajaran(db, id_materi=1)
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result3) == 2
+    assert result3[0].id == 1
+    assert result3[1].id == 3
+    db.reset_mock()
+
+
+    # Test case 4: Filter by id_tugas
+    db.query.return_value.filter.return_value.all.return_value = [video3]
+    result4 = read_all_video_pembelajaran(db, id_tugas=2)
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result4) == 1
+    assert result4[0].id == 3
+    db.reset_mock()
+
+
+    # Test case 5: No filters
+    db.query.return_value.all.return_value = [video1, video2, video3]
+    result5 = read_all_video_pembelajaran(db)
+    db.query.return_value.all.assert_called_once()
+    db.query.return_value.filter.assert_not_called()
+    assert len(result5) == 3
+    db.reset_mock()
+
+
+    # Test case 6: Pagination
+    db.query.return_value.offset.return_value\
+        .limit.return_value.all.return_value = [video3]
+    result6 = read_all_video_pembelajaran(db, limit=2, page=2)
+    db.query.return_value.offset.return_value\
+        .limit.return_value.all.assert_called_once()
+    db.query.return_value.filter.assert_not_called()
+    assert len(result6) == 1
+    assert result6[0].id == 3
+
+
+
+def test_read_tugas_pembelajaran_filter_by():
+    db = MagicMock()
+
+    # Create some test data
+    tugas1 = MagicMock(spec=models.TugasPembelajaran)
+    tugas1.id = 1
+    tugas1.judul = "Tugas 1"
+    tugas1.id_video = 1
+    tugas1.mapel = models.DaftarMapelSkolastik.kuantitatif
+    tugas1.id_materi = 1
+    tugas1.id_creator = 1
+    tugas1.time_created = datetime.datetime(2023, 5, 20, 10, 30, 0)
+
+    tugas2 = MagicMock(spec=models.TugasPembelajaran)
+    tugas2.id = 2
+    tugas2.judul = "Tugas 2"
+    tugas2.id_video = 2
+    tugas2.mapel = models.DaftarMapelSkolastik.literasi_inggris
+    tugas2.id_materi = 2
+    tugas2.id_creator = 2
+    tugas2.time_created = datetime.datetime(2023, 5, 19, 15, 0, 0)
+
+    # Test case 1: Filter by id_tugas
+    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
+    result1 = read_tugas_pembelajaran_filter_by(db, id_tugas=1)
+
+    db.query.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
+    assert len(result1) == 1
+    assert result1[0].id == 1
+    db.reset_mock()
+
+    # Test case 2: Filter by judul and mapel
+    db.query.return_value.filter.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1, tugas2]
+    result2 = read_tugas_pembelajaran_filter_by(db, newest=False, judul="Tugas 2", mapel="literasi_inggris")
+    db.query.return_value.filter.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
+    assert len(result2) == 2
+    assert result2[0].id == 1
+    assert result2[1].id == 2
+    db.reset_mock()
+
+    # Test case 3: Filter by creator id
+    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
+    result1 = read_tugas_pembelajaran_filter_by(db, id_mentor=1)
+
+    db.query.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
+    assert len(result1) == 1
+    assert result1[0].id == 1
+    db.reset_mock()
+
+    # Test case 4: No filters
+    db.query.return_value.order_by.return_value.all.return_value = [tugas1, tugas2]
+    result3 = read_tugas_pembelajaran_filter_by(db)
+    db.query.return_value.order_by.return_value.all.assert_called_once()
+    assert len(result3) == 2
+    assert result3[0].id == 1
+    assert result3[1].id == 2
+    db.reset_mock()
+
+    # Test case 5: Pagination
+    db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [tugas2]
+    result4 = read_tugas_pembelajaran_filter_by(db, newest=False, limit=1, page=2)
+    db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.assert_called_once()
+    assert len(result4) == 1
+    assert result4[0].id == 2
+    db.reset_mock()

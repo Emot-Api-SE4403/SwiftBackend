@@ -1,8 +1,8 @@
 import json
-from typing import Union
+from typing import Union, Optional
 from urllib import response
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status, Query
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -222,39 +222,6 @@ async def register_account_mentor(register_form: schema.MentorRegisterForm, db: 
         raise HTTPException(status_code = 400, detail=  "user already exists")
     return {"detail":"ok"}
 
-@app.post("/materi/tambah")
-async def buat_materi_pembelajaran_baru(materi_baru: schema.schema_pembuatan_materi_pembelajaran_baru, token_data:schema.TokenData = Depends(auth.get_token_data), db = Depends(get_db)):
-    auth.check_if_user_is_mentor(db, token_data.id)
-    
-    try:
-        if isinstance(materi_baru.mapel, int):
-            if materi_baru.mapel > 6 or materi_baru.mapel < 1:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
-            crud.create_materi_pembelajaran(db, materi_baru.mapel, materi_baru.nama_materi)          
-        elif isinstance(materi_baru.mapel, str):
-            
-            try:
-                crud.create_materi_pembelajaran(db, materi_baru.mapel, materi_baru.nama_materi)
-            except KeyError:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
-
-        return{"detail":"ok"}
-    except IntegrityError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi sudah ada")
-
-
-@app.get("/materi/daftar")
-async def baca_daftar_materi_pembelajaran(mapel:Union[str, int], db=Depends(get_db)):
-    try:
-        mapel = int(mapel)
-        if mapel > 6 or mapel < 1:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
-        return crud.read_materi_pembelajaran_by_mapel(db, mapel)
-    except ValueError:
-        try:
-            return crud.read_materi_pembelajaran_by_mapel(db, mapel)
-        except KeyError:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
 
 @app.post("/video/upload")
 async def upload_video_materi_baru(
@@ -278,7 +245,7 @@ async def upload_video_materi_baru(
     
     # check jika id materi valid
     try:
-        crud.read_materi_pembelajaran_by_id(db, id_materi)
+        crud.read_materi_pembelajaran_filter_by(db, id_materi=id_materi)
         crud.create_video_pembelajaran(db, token_data.id, judul_video, id_materi, file)
 
     except NoResultFound:
@@ -357,71 +324,6 @@ async def toggle_user_pelajar_is_member(pelajar: schema.UserBase, token_data: sc
         )
     return {"detail":"ok"}
 
-@app.get("/admin/materi/get/all")
-async def read_daftar_materi_all(token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db:Session = Depends(get_db)):
-    return crud.read_materi_pembelajaran_all_data(db)
-
-@app.get("/admin/materi/get/bymapelname")
-async def read_daftar_materi_filter_nama(name: str, token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db:Session = Depends(get_db)):
-    return crud.read_materi_pembelajaran_by_mapel(db, name)
-
-@app.get("/admin/materi/get/bymapelid")
-async def read_daftar_materi_filter_id(id: str, token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db:Session = Depends(get_db)):
-    try:
-        return crud.read_materi_pembelajaran_by_mapel(db, int(id))
-    except:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not found, check your input")
-    
-@app.post("/admin/materi/add")
-async def add_new_materi(
-    materi_baru: schema.schema_pembuatan_materi_pembelajaran_baru, 
-    token_data: schema.AdminTokenData = Depends(auth.get_admin_token), 
-    db:Session = Depends(get_db)):
-    if isinstance(materi_baru.mapel, int):
-        if materi_baru.mapel > 6 or materi_baru.mapel < 1:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
-    
-    try:
-        result=crud.create_materi_pembelajaran(db, materi_baru.mapel, materi_baru.nama_materi)
-        return{"detail":"ok", "instance":result}
-    except KeyError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
-    except IntegrityError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi sudah ada")
-    
-@app.put("/admin/materi/update")
-async def update_materi(
-    id: int,
-    materi_baru: schema.schema_pembuatan_materi_pembelajaran_baru, 
-    token_data: schema.AdminTokenData = Depends(auth.get_admin_token), 
-    db:Session = Depends(get_db)):
-    
-    try:
-        try:
-            if int(materi_baru.mapel) > 6 or int(materi_baru.mapel) < 1:
-                raise HTTPException(status_code=400, detail="invalid mapel id")
-            else:
-                hasil = crud.update_materi_pembelajaran_by_id(db, id, int(materi_baru.mapel),materi_baru.nama_materi)
-            
-        except ValueError:
-            if materi_baru.mapel in models.DaftarMapelSkolastik.__members__:
-                hasil = crud.update_materi_pembelajaran_by_id(db, id, materi_baru.mapel, materi_baru.nama_materi)
-            else:
-                raise HTTPException(status_code=400, detail="invalid mapel name")
-            
-        return {"detail":"ok", "instance":hasil}
-    except NoResultFound:
-        raise HTTPException(status_code=400, detail="Invalid materi id")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Something else went wrong, see="+str(e))
-    
-
-@app.delete("/admin/materi/delete")
-async def delete_materi_menggunakan_id(id:int, _ : schema.AdminTokenData=Depends(auth.get_admin_token), db=Depends(get_db) ):
-    try:
-        return {"detail":"ok", "row deleted":crud.delete_materi_pembelajaran_by_id(db, id)}
-    except:
-        raise HTTPException(500, "something went wrong")
     
 @app.post("/video/tugas/add")
 async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,tokendata:schema.TokenData = Depends(auth.get_token_data), db= Depends(get_db)):
@@ -481,7 +383,8 @@ async def menghapus_tugas_yang_ada_pada_video(id_video:int = Form(...), token:sc
 
         if db_video.id_tugas == None:
             raise HTTPException(status_code=400, detail="Tidak ada tugas pada video ini")
-        crud.delete_tugas_pembelajaran_by_id(db, db_video.id_tugas) # TODO
+        crud.delete_attemp_pengerjaan_tugas_by_id_tugas(db, db_video.id_tugas)
+        crud.delete_tugas_pembelajaran_by_id(db, db_video.id_tugas) 
         return(f"Tugas berhasil dihapus")
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Invalid id")
@@ -532,6 +435,7 @@ async def mengakses_soal_yang_ada_pada_video(id_video:int = Form(...), \
         
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Invalid id")
+
 
 @app.get("/video/tugas/edit")
 async def lihat_soal_pada_video_untuk_mentor(id_video:int = Form(...), \
@@ -647,5 +551,142 @@ async def melihat_nilai_pelajar(id_pelajar:int = None, id_tugas:int = None, limi
         return crud.read_nilai_tugas_filter_by(db=db, id_tugas=id_tugas, id_pelajar=id_pelajar, limit=limit, page=page)    
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-        
+    
 
+@app.get("/video/list")
+async def melihat_daftar_video_milik_mentor(
+    id_mentor: Optional[int] = Query(None, description="ID mentor yang dicari"),
+    id_tugas: Optional[int] = Query(None, description="ID tugas yang dicari"),
+    id_materi: Optional[int] = Query(None, description="ID materi yang dicari"),
+    judul: Optional[str] = Query(None, description="judul video yang dicari"),
+    limit: Optional[int] = Query(None, description="Limit the number of results"),
+    page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+    token: Union[schema.TokenData, schema.AdminTokenData] = Depends(auth.get_token_dynamic),
+    db: Session = Depends(get_db)
+):
+    try:
+        return crud.read_all_video_pembelajaran(
+            db, 
+            id_mentor=id_mentor, 
+            id_tugas=id_tugas,
+            id_materi=id_materi,
+            judul=judul,
+            limit=limit, 
+            page=page
+        )
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    
+@app.post("/materi/tambah")
+async def buat_materi_pembelajaran_baru(
+        materi_baru: schema.schema_pembuatan_materi_pembelajaran_baru, 
+        token: Union[schema.TokenData, schema.AdminTokenData] = Depends(auth.get_token_dynamic),
+        db: Session = Depends(get_db)
+        ):
+    if isinstance(token, schema.TokenData):
+        auth.check_if_user_is_mentor(db, token.id)
+
+    if isinstance(materi_baru.mapel, int):
+        if materi_baru.mapel > 6 or materi_baru.mapel < 1:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
+    
+    try:
+        return crud.create_materi_pembelajaran(db, materi_baru.mapel, materi_baru.nama_materi) 
+    except KeyError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="mapel invalid")
+    except IntegrityError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi sudah ada")
+    
+
+@app.put("/materi/admin/update") # <- update materi
+async def update_materi(
+    id: int,
+    materi_baru: schema.schema_pembuatan_materi_pembelajaran_baru, 
+    token: schema.AdminTokenData = Depends(auth.get_admin_token), 
+    db:Session = Depends(get_db)):
+    try:
+        if crud.read_admin_by_id(db, token.id) is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user id")
+        
+        try:
+            if int(materi_baru.mapel) > 6 or int(materi_baru.mapel) < 1:
+                raise HTTPException(status_code=400, detail="invalid mapel id")
+            else:
+                hasil = crud.update_materi_pembelajaran_by_id(db, id, int(materi_baru.mapel),materi_baru.nama_materi)
+            
+        except ValueError:
+            if materi_baru.mapel in models.DaftarMapelSkolastik.__members__:
+                hasil = crud.update_materi_pembelajaran_by_id(db, id, materi_baru.mapel, materi_baru.nama_materi)
+            else:
+                raise HTTPException(status_code=400, detail="invalid mapel name")
+            
+        return {"detail":"ok", "instance":hasil}
+    except NoResultFound:
+        raise HTTPException(status_code=400, detail="Invalid materi id")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Something else went wrong, see="+str(e))
+    
+
+@app.delete("/materi/admin/delete") # <- delete materi
+async def delete_materi_menggunakan_id(id:int, token : schema.AdminTokenData=Depends(auth.get_admin_token), db=Depends(get_db) ):
+    try:
+        if crud.read_admin_by_id(db, token.id) is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user id")
+
+        return {"detail":"ok", "row deleted":crud.delete_materi_pembelajaran_by_id(db, id)}
+    except Exception as e:
+        raise HTTPException(500, f"something went wrong, details: {str(e)}")
+        
+@app.get("/materi/list")
+async def read_daftar_materi(
+        id_materi:Optional[int] = Query(None, description="id materi yang dicari"),
+        id_mapel:Optional[int] = Query(None, description="filter materi dengan id mapel"),
+        nama_mapel:Optional[str] = Query(None, description="filter materi dengan nama mapel"),
+        mapel:Optional[models.DaftarMapelSkolastik] = Query(None, description="filter materi dengan mapel"),
+        limit: Optional[int] = Query(None, description="Limit the number of results"),
+        page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+        _:Union[schema.TokenData, schema.AdminTokenData] = Depends(auth.get_token_dynamic),
+        db: Session = Depends(get_db)
+        ):
+    try:
+        return crud.read_materi_pembelajaran_filter_by(
+            db,
+            id_materi = id_materi,
+            id_mapel = id_mapel,
+            nama_mapel = nama_mapel,
+            mapel = mapel,
+            limit=limit,
+            page=page
+            )
+    except Exception as e:
+        raise HTTPException(500, f"something went wrong, details: {str(e)}")
+    
+@app.get("/materi/tugas/list")
+async def read_daftar_tugas(
+        id_tugas:Optional[int] = Query(None, description="id materi yang dicari"), 
+        newest:Optional[bool] = Query(True, description="mengurutkan dari yang terbaru"), 
+        id_video:Optional[int] = Query(None, description="filter materi dengan id video"), 
+        judul:Optional[str] = Query(None, description="filter materi dengan judul tugas"), 
+        mapel:Optional[str] = Query(None, description="filter materi dengan nama mapel"),
+        id_materi: Optional[int] = Query(None, description="filter materi dengan id materi"), 
+        id_creator: Optional[int] = Query(None, description="filter materi dengan id mentor"),
+        limit: Optional[int] = Query(None, description="Limit the number of results"),
+        page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+        _:Union[schema.TokenData, schema.AdminTokenData] = Depends(auth.get_token_dynamic),
+        db: Session = Depends(get_db)
+        ):
+    try:
+        return crud.read_tugas_pembelajaran_filter_by(
+            db,
+            id_tugas=id_tugas,
+            newest=newest,
+            id_video=id_video,
+            mapel=mapel,
+            judul=judul,
+            id_materi=id_materi,
+            id_creator=id_creator,
+            limit=limit,
+            page=page
+            )
+    except Exception as e:
+        raise HTTPException(500, f"something went wrong, details: {str(e)}")

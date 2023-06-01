@@ -1,48 +1,53 @@
 
 # Swift E-Learning Backend Service
 
-Sebuah server backend yang didukung oleh FastApi untuk Swift e-Learning
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Emot-Api-SE4403_SwiftBackend&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=Emot-Api-SE4403_SwiftBackend)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Emot-Api-SE4403_SwiftBackend&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Emot-Api-SE4403_SwiftBackend)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Emot-Api-SE4403_SwiftBackend&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Emot-Api-SE4403_SwiftBackend)
+![CodeQL](https://github.com/Emot-Api-SE4403/SwiftBackend/actions/workflows/github-code-scanning/codeql/badge.svg)
+![CI Status](https://github.com/Emot-Api-SE4403/SwiftBackend/actions/workflows/ci.yaml/badge.svg)
+
+#### Sebuah server backend yang didukung oleh FastApi untuk Swift e-Learning. 
 
 
+## Dokumentasi API
+
+Jika Anda ingin melihat dokumentasi API, buka
+```bash
+    http://localhost:8000/docs
+```
+atau
+```bash
+    http://localhost:8000/redoc 
+```
+di browser web Anda. Ini akan menampilkan halaman Swagger UI dan ReDoc documentation.
 
 
 
 ## Menjalankan Secara Lokal
 
-Klon repositori
+### Klon repositori
 
 ```bash
   git clone https://github.com/Emot-Api-SE4403/SwiftBackend.git
 ```
 
-Buka direktori proyek
+### Buka direktori proyek
 
 ```bash
   cd SwiftBackend
 ```
 
-Instal MySQL
-
-
-Terdapat dua pilihan untuk menginstal MySQL. Anda dapat menggunakan Docker atau XAMPP.
-- Untuk menginstal MySQL menggunakan Docker, ikuti langkah-langkah yang disebutkan dalam [dokumentasi resmi.](https://hub.docker.com/_/mysql)
-
-- Untuk menginstal MySQL menggunakan XAMPP, [unduh dan instal XAMPP](https://www.apachefriends.org/download.html). Setelah diinstal, mulai server MySQL dari panel kontrol XAMPP
-
-Instal kebutuhan
+### Instal kebutuhan
 
 ```bash
   pip install -r requirements.txt
 ```
 
-Buat file variabel lingkungan `.env` misalnya
+### Buat file variabel lingkungan `.env` 
+lihat <a href="#environment-variables">#environment-variables</a>
 
-```code
-SECRET_KEY_AUTH="09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-SQL_DATABASE_URL="mysql+pymysql://root@localhost/swift_backend?charset=utf8"
-```
-
-Mulai server
+### Mulai server
 
 ```bash
   uvicorn main:app --reload
@@ -58,18 +63,12 @@ dapat di isi dengan string hex yang didapat dari:
 ```bash
 openssl rand -hex 32
 ```
-
-`SQL_DATABASE_URL` dapat di isi dengan url database anda
-
-
-## Dokumentasi API
-
-Jika Anda ingin melihat dokumentasi API, buka
-```http
-    http://localhost:8000/docs 
-```
-atau
-```http 
-    http://localhost:8000/redoc 
-```
-di browser web Anda. Ini akan menampilkan halaman Swagger UI dan ReDoc documentation.
+- `SECRET_KEY_AUTH` database encription key, generate menggunakan ``openssl rand -hex 32``
+- `S3_ACCESS_KEY` s3 access key
+- `S3_SECRET_KEY` s3 public key
+- `S3_URL` s3 url
+- `EMAIL_API_KEY_PUBLIC` mailjet public api key 
+- `EMAIL_API_KEY_PRIVATE` mailjet private api key 
+- `MY_EMAIL` email used in mailjet
+- `SQL_DATABASE_URL` database url string, example ``mysql+mysqldb://root@localhost:3306/test?charset=utf8``
+- `DOMAIN` Your backend domain, example ``http://localhost:8000``
