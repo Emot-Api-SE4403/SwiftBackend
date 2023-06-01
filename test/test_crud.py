@@ -1140,7 +1140,7 @@ def test_read_tugas_pembelajaran_filter_by():
 
     # Test case 1: Filter by id_tugas
     db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
-    result1 = read_tugas_pembelajaran_filter_by(db, newest=True, id_tugas=1)
+    result1 = read_tugas_pembelajaran_filter_by(db, id_tugas=1)
 
     db.query.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
     assert len(result1) == 1
@@ -1156,16 +1156,25 @@ def test_read_tugas_pembelajaran_filter_by():
     assert result2[1].id == 2
     db.reset_mock()
 
-    # Test case 3: No filters, sort by newest
+    # Test case 3: Filter by creator id
+    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
+    result1 = read_tugas_pembelajaran_filter_by(db, id_mentor=1)
+
+    db.query.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
+    assert len(result1) == 1
+    assert result1[0].id == 1
+    db.reset_mock()
+
+    # Test case 4: No filters
     db.query.return_value.order_by.return_value.all.return_value = [tugas1, tugas2]
-    result3 = read_tugas_pembelajaran_filter_by(db, newest=True)
+    result3 = read_tugas_pembelajaran_filter_by(db)
     db.query.return_value.order_by.return_value.all.assert_called_once()
     assert len(result3) == 2
     assert result3[0].id == 1
     assert result3[1].id == 2
     db.reset_mock()
 
-    # Test case 4: Pagination
+    # Test case 5: Pagination
     db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [tugas2]
     result4 = read_tugas_pembelajaran_filter_by(db, newest=False, limit=1, page=2)
     db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.assert_called_once()

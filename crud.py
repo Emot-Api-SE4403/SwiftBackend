@@ -475,22 +475,13 @@ def read_all_video_pembelajaran(db: Session, **kwargs):
     return query.all()
 
 
-def read_tugas_pembelajaran_filter_by(db:Session, newest: bool, **kwargs):
+def read_tugas_pembelajaran_filter_by(db:Session, newest: bool= True, **kwargs):
     limit = kwargs.get('limit', None)
     page = kwargs.get('page', None)
 
     query = db.query(models.TugasPembelajaran)
 
     # Filter conditions based on provided parameters
-    """
-            id_tugas=id_tugas,
-            newest=newest,
-            id_video=id_video,
-            mapel=mapel,
-            judul=judul,
-            id_materi=id_materi,
-            id_creator=id_creator,
-    """
     for key, value in kwargs.items():
         if value is not None:
             if key == 'id_tugas':
@@ -511,7 +502,7 @@ def read_tugas_pembelajaran_filter_by(db:Session, newest: bool, **kwargs):
                         models.Materi.id == value
                     )
                 ))
-            elif key == 'id_materi':
+            elif key == 'id_mentor':
                 query = query.filter(models.TugasPembelajaran.video.has(
                     models.VideoPembelajaran.creator_id == value
                 ))
