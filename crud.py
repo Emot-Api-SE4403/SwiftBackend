@@ -173,21 +173,33 @@ def create_materi_pembelajaran(db:Session, mapel: Union[str, int, models.DaftarM
     db.refresh(db_materi)
     return db_materi
     
-def read_materi_pembelajaran_all_data(db: Session):
-    return db.query(models.Materi).all()
+def read_materi_pembelajaran_filter_by(db:Session, **kwargs):
+    limit = kwargs.get('limit', None)
+    page = kwargs.get('page', None)
 
-def read_materi_pembelajaran_by_id(db:Session, id:int):
-    return db.query(models.Materi).filter(models.Materi.id == id).one()
+    query = db.query(models.Materi)
 
-def read_materi_pembelajaran_by_mapel(db:Session,  mapel: Union[str, int, models.DaftarMapelSkolastik]):
-    if isinstance(mapel, int):
-        return db.query(models.Materi).filter(models.Materi.mapel == models.DaftarMapelSkolastik(mapel)).all()
-    elif isinstance(mapel, models.DaftarMapelSkolastik):
-        return db.query(models.Materi).filter(models.Materi.mapel == mapel).all()
-    elif isinstance(mapel, str):   
-        return db.query(models.Materi).filter(models.Materi.mapel == models.DaftarMapelSkolastik[mapel]).all()
-    else:
-        raise Exception("Unsupported type")
+    for key, value in kwargs.items():
+        if value is not None:
+            if key == "id_materi":
+                query = query.filter(models.Materi.id == value)
+            elif key == "id_mapel":
+                query = query.filter(models.Materi.mapel == models.DaftarMapelSkolastik(value))
+            elif key == "nama_mapel":
+                query = query.filter(models.Materi.mapel == models.DaftarMapelSkolastik[value])
+            elif key == "mapel":
+                query = query.filter(models.Materi.mapel == value)
+    
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+
+        query = query.limit(limit)
+
+    return query.all()
+
+
 
 def update_materi_pembelajaran_by_id(db: Session, id: int, mapel:Union[str,int], nama_materi: str):
     
@@ -430,3 +442,30 @@ def read_nilai_tugas_filter_by(db:Session, **kwargs):
 
     return  query.all()
     
+
+def read_all_video_pembelajaran(db: Session, **kwargs):
+    limit = kwargs.get('limit', None)
+    page = kwargs.get('page', None)
+
+    query = db.query(models.VideoPembelajaran)
+
+    # Filter conditions based on provided parameters
+    for key, value in kwargs.items():
+        if value is not None:
+            if key == 'id_mentor':
+                query = query.filter(models.VideoPembelajaran.creator_id == value)
+            elif key == 'judul':
+                query = query.filter(models.VideoPembelajaran.judul == value)
+            elif key == 'id_materi':
+                query = query.filter(models.VideoPembelajaran.id_materi == value)
+            elif key == 'id_tugas':
+                query = query.filter(models.VideoPembelajaran.id_tugas == value)
+
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+
+        query = query.limit(limit)
+
+    return query.all()
