@@ -1,5 +1,5 @@
 import datetime
-from typing import Union
+from typing import List, Union
 import secrets
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
@@ -252,3 +252,181 @@ def delete_video_pembelajaran_by_id(db:Session, video_id: int):
     db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == video_id).delete()
     db.commit()
     return "ok"
+
+def create_tugas_pembelajaran(db:Session, judul, attempt:int, id_video:int):
+    # print("read video db")
+    db_video = db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == id_video).one()
+
+    # print("make tugas db")
+    db_tugas = models.TugasPembelajaran(judul=judul, attempt_allowed=attempt)
+    db.add(db_tugas)
+    db.commit()
+    db.refresh(db_tugas)
+
+    # print("update video db")
+    db_video.id_tugas = db_tugas.id
+    db.commit()
+    db.refresh(db_video)
+    
+    return db_tugas
+
+def create_soal_abc(db:Session, pertanyaan, id_tugas):
+    db_soal = models.SoalABC(
+        pertanyaan=pertanyaan,
+        type="pilihan_ganda",
+        id_tugas=id_tugas
+    )
+    db.add(db_soal)
+    db.commit()
+    db.refresh(db_soal)
+    return db_soal
+
+def create_jawaban_abc(db:Session, id_soal, jawaban):
+    db_jawaban = models.JawabanABC(
+        id_soal=id_soal,
+        jawaban=jawaban
+    )
+    db.add(db_jawaban)
+    db.commit()
+    db.refresh(db_jawaban)
+    return db_jawaban
+
+def update_soal_abc_add_kunci_by_ids(db:Session, id_soal, id_kunci):
+    soal = db.query(models.SoalABC).filter(models.SoalABC.id == id_soal).one()
+    soal.kunci = id_kunci
+
+    db.commit()
+    db.refresh(soal)
+    return soal
+
+def create_soal_benar_salah(db:Session, pertanyaan, id_tugas, pernyataan_true, pernyataan_false):
+    db_soal = models.SoalBenarSalah(
+        pertanyaan=pertanyaan,
+        type="benar_salah",
+        id_tugas=id_tugas,
+        benar=pernyataan_true,
+        salah=pernyataan_false
+    )
+    db.add(db_soal)
+    db.commit()
+    db.refresh(db_soal)
+    return db_soal
+
+def create_jawaban_benar_salah(db:Session, id_soal, jawaban, pernyataan_yg_benar):
+    print("membuat jawaban benar salah")
+    db_jawaban = models.JawabanBenarSalah(
+        id_soal=id_soal,
+        jawaban=jawaban,
+        kunci=pernyataan_yg_benar
+    )
+    db.add(db_jawaban)
+    db.commit()
+    db.refresh(db_jawaban)
+    print("selesai membuat jawaban benar salah")
+    return db_jawaban
+
+
+def create_soal_multi_pilih(db:Session, pertanyaan, id_tugas):
+    db_soal = models.SoalMultiPilih(
+        pertanyaan=pertanyaan,
+        type="multi_pilih",
+        id_tugas=id_tugas
+    )
+    db.add(db_soal)
+    db.commit()
+    db.refresh(db_soal)
+    return db_soal
+
+def create_jawaban_multi_pilih(db:Session, id_soal, jawaban, benar):
+    db_jawaban = models.JawabanMultiPilih(
+        id_soal=id_soal,
+        jawaban=jawaban,
+        benar=benar
+    )
+
+    db.add(db_jawaban)
+    db.commit()
+    db.refresh(db_jawaban)
+    return db_jawaban
+
+
+def update_video_pembelajaran_remove_tugas(db:Session, id_video:int):
+    db_video = db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == id_video).one()
+    db_video.id_tugas = None
+    db.commit()
+
+
+def delete_tugas_pembelajaran_by_id(db: Session, tugas_pembelajaran_id: int):
+    # Get the TugasPembelajaran object
+    tugas_pembelajaran:models.TugasPembelajaran = db.query(models.TugasPembelajaran).get(tugas_pembelajaran_id)
+
+    if tugas_pembelajaran:
+        # Delete the associated Soal objects and their answers
+        for soal in tugas_pembelajaran.soal:
+            if isinstance(soal, models.SoalABC):
+                for jawaban in soal.pilihan:
+                    db.delete(jawaban)
+                db.delete(soal)
+            elif isinstance(soal, models.SoalBenarSalah):
+                for jawaban in soal.pilihan:
+                    db.delete(jawaban)
+                db.delete(soal)
+            elif isinstance(soal, models.SoalMultiPilih):
+                for jawaban in soal.pilihan:
+                    db.delete(jawaban)
+                db.delete(soal)
+        update_video_pembelajaran_remove_tugas(db, tugas_pembelajaran.video.id)
+        db.delete(tugas_pembelajaran)
+        db.commit()
+
+        return True
+
+    return False
+
+
+def read_tugas_pembelajaran_by_id(db:Session, id_tugas):
+    return db.query(models.TugasPembelajaran).filter(models.TugasPembelajaran.id == id_tugas).one()
+
+def read_attempt_mengerjakan_tugas(db:Session, id_tugas, id_pelajar):
+    return db.query(models.AttemptMengerjakanTugas)\
+           .filter(models.AttemptMengerjakanTugas.id_pelajar == id_pelajar, \
+                   models.AttemptMengerjakanTugas.id_tugas == id_tugas).all()
+
+def create_new_attempt_mengerjakan_tugas(db:Session, id_pelajar, id_tugas, nilai, start, stop):
+    if(nilai//10 == 0):
+        nilai = nilai * 10
+    
+    db_attemp = models.AttemptMengerjakanTugas(
+        id_pelajar = id_pelajar,
+        id_tugas = id_tugas,
+        nilai = nilai,
+        waktu_mulai=start,
+        waktu_selesai=stop
+    )
+    db.add(db_attemp)
+    db.commit()
+    db.refresh(db_attemp)
+    return db_attemp
+
+
+def read_nilai_tugas_filter_by(db:Session, **kwargs):
+    id_pelajar = kwargs.get('id_pelajar', None)
+    id_tugas = kwargs.get('id_tugas', None)
+    limit = kwargs.get('limit', None) 
+    page = kwargs.get('page', None) 
+
+    query = db.query(models.AttemptMengerjakanTugas)
+
+    if id_pelajar:
+        query = query.filter(models.AttemptMengerjakanTugas.id_pelajar == id_pelajar)
+    if id_tugas:
+        query = query.filter(models.AttemptMengerjakanTugas.id_tugas == id_tugas)
+
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+        query = query.limit(limit)
+
+    return  query.all()
+    

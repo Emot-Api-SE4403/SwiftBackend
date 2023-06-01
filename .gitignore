@@ -5,6 +5,7 @@
 /__pycache__
 /.pytest_cache
 /test/__pycache__
+/tes/static/*
 
 # env file
 .env
@@ -16,6 +17,7 @@ Dockerfile
 /.aws/
 .space
 Spacefile
+.spaceignore
 
 # test file
 .coverage

@@ -1,7 +1,7 @@
 """
 Schema digunakan sebagai struktur data
 """
-from typing import Optional, Union
+from typing import Optional, Union, List
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -86,6 +86,78 @@ class AdminRegisterForm(AdminBase):
     new_password: str
     
 class schema_pembuatan_materi_pembelajaran_baru(BaseModel):
-    mapel: Union[str, int]
+    mapel: Union[int, str]
     nama_materi: str
 
+
+class SoalABC(BaseModel):
+    pertanyaan: str
+    pilihan_jawaban: List[str]
+
+    class Config:
+        orm_mode = True
+
+class SoalABCKunci(SoalABC):
+    index_jawaban_benar: int
+
+class JawabanBenarSalah(BaseModel):
+    isi_jawaban: str
+
+    class Config:
+        orm_mode = True
+
+class JawabanBenarSalahKunci(JawabanBenarSalah):
+    jawaban_pernyataan_yang_benar: bool
+
+class SoalBenarSalah(BaseModel):
+    pertanyaan: str
+    pernyataan_pada_benar: str
+    pernyataan_pada_salah: str
+    daftar_jawaban: List[Union[JawabanBenarSalahKunci, JawabanBenarSalah]]
+
+    class Config:
+        orm_mode = True
+
+class JawabanMultiPilih(BaseModel):
+    isi_jawaban: str
+
+    class Config:
+        orm_mode = True
+
+class JawabanMultiPilihKunci(JawabanMultiPilih):
+    jawaban_ini_benar: bool
+
+class SoalMultiPilih(BaseModel):
+    pertanyaan: str
+    pilihan: List[Union[JawabanMultiPilihKunci, JawabanMultiPilih]]
+
+    class Config:
+        orm_mode = True
+
+class TugasPembelajaran(BaseModel):
+    judul: str
+    jumlah_attempt: int
+    daftar_soal: List[Union[SoalABCKunci, SoalABC, SoalBenarSalah, SoalMultiPilih]]
+
+    class Config:
+        orm_mode = True
+
+class ReadTugasPembelajaran(TugasPembelajaran):
+    id: int
+    time_created: datetime
+    time_updated: datetime
+
+    class Config:
+        orm_mode = True
+
+class TambahTugasPembelajaran(TugasPembelajaran):
+    id_video: int
+
+    class Config:
+        orm_mode = True
+
+class format_kirim_jawaban_tugas(BaseModel):
+    id_tugas:int
+    waktu_mulai: datetime
+    waktu_selesai: datetime
+    jawaban: List[Union[List[str], str]]

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 import unittest.mock as mock
 from sqlalchemy.orm import Session
 import auth
+from jose import jwt
 
 import auth
 import crud
@@ -222,3 +223,24 @@ async def test_get_admin_token_invalid_token():
     assert exc.type == HTTPException
     assert exc.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert str(exc.value.detail) == "Could not validate credentials"
+
+@pytest.mark.asyncio
+async def test_get_token_dynamic():
+    token_user = auth.create_access_token({"id":1})
+    token_data = await auth.get_token_dynamic(token_user)
+    assert token_data.id == 1
+    assert isinstance(token_data, schema.TokenData)
+
+    token_admin = auth.create_access_token({"id":"admin"})
+    token_data = await auth.get_token_dynamic(token_admin)
+    assert token_data.id == "admin"
+    assert isinstance(token_data, schema.AdminTokenData)
+
+    token_err = auth.create_access_token({"id": "admin"})
+    with mock.patch("auth.jwt.decode") as mock_decode:
+        mock_decode.side_effect = auth.JWTError("Invalid token")
+        with pytest.raises(HTTPException) as exc_info:
+            await auth.get_token_dynamic(token_err)
+
+        assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+    
