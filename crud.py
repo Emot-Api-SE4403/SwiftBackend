@@ -219,6 +219,7 @@ def delete_materi_pembelajaran_by_id(db: Session, id: int):
     return hasil
 
 def create_video_pembelajaran(db:Session, creator: int, judul: str, materi: int, file: UploadFile):
+    db.rollback()
     db_video = models.VideoPembelajaran(
         creator_id= creator,
         judul=judul,

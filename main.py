@@ -243,15 +243,11 @@ async def upload_video_materi_baru(
             detail="Ukuran file terlalu besar. Maksimal ukuran file adalah {} bytes".format(524288000)
         )
     
-    # check jika id materi valid
-    try:
-        materi = crud.read_materi_pembelajaran_filter_by(db, id_materi=id_materi)
-        if(len(materi) != 1):
-            raise HTTPException(400, detail="Bad materi id")
-        crud.create_video_pembelajaran(db, token_data.id, judul_video, id_materi, file)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail='Something went wrong ->'+str(e))
+    
+    materi = crud.read_materi_pembelajaran_filter_by(db, id_materi=id_materi)
+    if(len(materi) != 1):
+        raise HTTPException(400, detail="Bad materi id")
+    crud.create_video_pembelajaran(db, token_data.id, judul_video, id_materi, file)
 
     return {"detail":"ok",}
 

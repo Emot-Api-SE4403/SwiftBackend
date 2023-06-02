@@ -13,7 +13,8 @@ KEY_ID = os.getenv("S3_KEY_ID")
 ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, echo=True)
-
+if not database_exists(SQLALCHEMY_DATABASE_URL):
+    create_database(SQLALCHEMY_DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
