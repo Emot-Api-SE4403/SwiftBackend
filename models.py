@@ -16,7 +16,7 @@ class User(Base):
     email = Column(String(255), unique=True, index=True)
     nama_lengkap = Column(String(255))
     hashed_password =  Column(String(255))
-    profile_picture = Column(String(255), default='default.png')
+    profile_picture = Column(String(512), default='default.png')
     time_created = Column(DateTime(timezone=True), server_default=func.now())
     time_updated = Column(DateTime(timezone=True), onupdate=func.now())
     is_active = Column(Boolean, default=False)
