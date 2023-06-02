@@ -40,7 +40,7 @@ def update_user_profile_picture_by_id(db: Session, new_profile_picture: UploadFi
     db_user.time_updated = datetime.datetime.now()
     db_user.profile_picture = str(db_user.id)+'-'+db_user.time_updated.strftime("%Y%m%d%S") + '-' + new_profile_picture.filename
 
-    s3.upload_fileobj(new_profile_picture.file, 'profile-picture', str(db_user.profile_picture))
+    s3.upload_fileobj(new_profile_picture.file, 'swift-profile-picture', str(db_user.profile_picture))
     db.commit()
 
 def update_user_password_by_temp_password(db: Session, email: str):
@@ -89,7 +89,7 @@ def read_user_mentor_by_id(db: Session, user_id: int):
     db_mentor = db.query(models.Mentor).filter(models.Mentor.uid == user_id).one()
     db_mentor.profile_picture = s3.generate_presigned_url(
         'get_object',
-        Params = {'Bucket': 'profile-picture', 'Key': db_mentor.profile_picture},
+        Params = {'Bucket': 'swift-profile-picture', 'Key': db_mentor.profile_picture},
         ExpiresIn = 86400
     )
     return db_mentor
@@ -119,7 +119,7 @@ def read_user_pelajar_by_id(db: Session, user_id: int):
     db_pelajar = db.query(models.Pelajar).filter(models.Pelajar.uid == user_id).first()
     db_pelajar.profile_picture = s3.generate_presigned_url(
         'get_object',
-        Params = {'Bucket': 'profile-picture', 'Key': db_pelajar.profile_picture},
+        Params = {'Bucket': 'swift-profile-picture', 'Key': db_pelajar.profile_picture},
         ExpiresIn = 86400
     )
     return db_pelajar
@@ -229,7 +229,7 @@ def create_video_pembelajaran(db:Session, creator: int, judul: str, materi: int,
     contents = file.file.read()
     file.file.seek(0)
     # Upload the file to to your S3 service
-    s3.upload_fileobj(file.file,"video-pembelajaran", db_video.s3_key)
+    s3.upload_fileobj(file.file,"swift-video-pembelajaran", db_video.s3_key)
     file.file.close()
 
     db.add(db_video)
@@ -244,7 +244,7 @@ def read_video_pembelajaran_download_url_by_id(db: Session, id: int):
 
     return s3.generate_presigned_url(
         'get_object',
-        Params = {'Bucket': 'video-pembelajaran', 'Key': db_video.s3_key},
+        Params = {'Bucket': 'swift-video-pembelajaran', 'Key': db_video.s3_key},
         ExpiresIn = 10800
     )
 
@@ -260,7 +260,7 @@ def delete_video_pembelajaran_by_id(db:Session, video_id: int):
     db_video = db.query(models.VideoPembelajaran)\
     .filter(models.VideoPembelajaran.id == video_id).one()
 
-    s3.delete_object(Bucket='video-pembelajaran', key=db_video.s3_key)
+    s3.delete_object(Bucket='swift-video-pembelajaran', key=db_video.s3_key)
     db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == video_id).delete()
     db.commit()
     return "ok"
