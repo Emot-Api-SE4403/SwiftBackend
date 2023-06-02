@@ -262,7 +262,7 @@ def test_read_user_mentor_by_id_with_mock():
         session.query.return_value.filter.return_value.one.assert_called_once()
         mock_generate_presigned_url.assert_called_once_with(
             'get_object',
-            Params={'Bucket': 'profile-picture', 'Key': "mentor_profile_picture.jpg"},
+            Params={'Bucket': 'swift-profile-picture', 'Key': "mentor_profile_picture.jpg"},
             ExpiresIn=86400
         )
 
@@ -325,7 +325,7 @@ def test_read_user_pelajar_by_id_with_mock():
         session.query.return_value.filter.return_value.first.assert_called_once()
         mock_generate_presigned_url.assert_called_once_with(
             'get_object',
-            Params={'Bucket': 'profile-picture', 'Key': "profile_picture.jpg"},
+            Params={'Bucket': 'swift-profile-picture', 'Key': "profile_picture.jpg"},
             ExpiresIn=86400
         )
 
@@ -658,7 +658,7 @@ def test_read_video_pembelajaran_download_url_by_id_with_mock():
         session.query.return_value.filter.return_value.one.assert_called_once()
         mock_generate_presigned_url.assert_called_once_with(
             'get_object',
-            Params={'Bucket': 'video-pembelajaran', 'Key': s3_key},
+            Params={'Bucket': 'swift-video-pembelajaran', 'Key': s3_key},
             ExpiresIn=10800
         )
         assert result == download_url

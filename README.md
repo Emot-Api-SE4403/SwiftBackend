@@ -58,14 +58,10 @@ lihat <a href="#environment-variables">#environment-variables</a>
 
 Untuk menjalankan proyek ini, Anda perlu menambahkan variabel lingkungan berikut ke file .env Anda
 
-`SECRET_KEY_AUTH`
-dapat di isi dengan string hex yang didapat dari:
-```bash
-openssl rand -hex 32
-```
+
 - `SECRET_KEY_AUTH` database encription key, generate menggunakan ``openssl rand -hex 32``
-- `S3_ACCESS_KEY` s3 access key
-- `S3_SECRET_KEY` s3 public key
+- `S3_ACCESS_KEY` s3/secret/access/application key
+- `S3_KEY_ID` id of your s3 key
 - `S3_URL` s3 url
 - `EMAIL_API_KEY_PUBLIC` mailjet public api key 
 - `EMAIL_API_KEY_PRIVATE` mailjet private api key 
