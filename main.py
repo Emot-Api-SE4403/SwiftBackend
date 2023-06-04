@@ -63,8 +63,8 @@ async def login_for_access_token(form_data: schema.UserLoginForm, db: Session = 
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/user/aktivasi",
-        response_model=HTMLResponse,
         responses={
+            200: {"description": "HTML Response", "content": {"text/html": {}}},
             400: {"description": "Bad Request"},
             404: {"description": "Something went wrong"}
         }
