@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Optional, Union, List
 from datetime import datetime
 from pydantic import BaseModel
+import models
 
 
 class Token(BaseModel):
@@ -152,7 +153,7 @@ class TugasPembelajaran(BaseModel):
 class ReadTugasPembelajaran(TugasPembelajaran):
     id: int
     time_created: datetime
-    time_updated: datetime
+    time_updated: Optional[datetime]
 
     class Config:
         orm_mode = True
@@ -184,7 +185,7 @@ class video_metadata(BaseModel):
 class tugas_pembelajaran_metadata(BaseModel):
     id: int
     time_created: datetime
-    time_updated: datetime
+    time_updated: Optional[datetime]
     judul: str
     attempt_allowed: int
 
@@ -209,18 +210,10 @@ class attempt_mengerjakan_tugas(BaseModel):
     class Config:
         orm_mode = True
 
-class DaftarMapelSkolastik(Enum):
-    kuantitatif = 1
-    penalaran_matematika = 2
-    literasi_inggris = 3
-    literasi_indonesia = 4
-    penalaran_umum = 5
-    membaca_dan_menulis = 6
-
 class Materi(BaseModel):
     id: int
     nama: str
-    mapel: DaftarMapelSkolastik
+    mapel: models.DaftarMapelSkolastik
 
     class Config:
         orm_mode = True

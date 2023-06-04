@@ -1,5 +1,5 @@
 import pytest
-import schema
+import schema, models
 from datetime import datetime
 
 
@@ -152,30 +152,13 @@ def test_attempt_mengerjakan_tugas():
     assert attempt.id_pelajar == 1
     assert attempt.id_tugas == 1
 
-def test_daftar_mapel_skolastik():
-    assert schema.DaftarMapelSkolastik.kuantitatif.value == 1
-    assert schema.DaftarMapelSkolastik.penalaran_matematika.value == 2
-    assert schema.DaftarMapelSkolastik.literasi_inggris.value == 3
-    assert schema.DaftarMapelSkolastik.literasi_indonesia.value == 4
-    assert schema.DaftarMapelSkolastik.penalaran_umum.value == 5
-    assert schema.DaftarMapelSkolastik.membaca_dan_menulis.value == 6
-
-    assert isinstance(schema.DaftarMapelSkolastik.kuantitatif, schema.DaftarMapelSkolastik)
-    assert isinstance(schema.DaftarMapelSkolastik.penalaran_matematika, schema.DaftarMapelSkolastik)
-    assert isinstance(schema.DaftarMapelSkolastik.literasi_inggris, schema.DaftarMapelSkolastik)
-    assert isinstance(schema.DaftarMapelSkolastik.literasi_indonesia, schema.DaftarMapelSkolastik)
-    assert isinstance(schema.DaftarMapelSkolastik.penalaran_umum, schema.DaftarMapelSkolastik)
-    assert isinstance(schema.DaftarMapelSkolastik.membaca_dan_menulis, schema.DaftarMapelSkolastik)
-
-    with pytest.raises(ValueError):
-        schema.DaftarMapelSkolastik(7)
 
 def test_materi():
     # Create a sample data dictionary
     data = {
         'id': 1,
         'nama': 'Materi 1',
-        'mapel': schema.DaftarMapelSkolastik.kuantitatif
+        'mapel': models.DaftarMapelSkolastik.kuantitatif
     }
 
     # Create an instance of the schema class
@@ -184,13 +167,13 @@ def test_materi():
     # Assert that the fields match the provided data
     assert materi.id == 1
     assert materi.nama == 'Materi 1'
-    assert materi.mapel == schema.DaftarMapelSkolastik.kuantitatif
+    assert materi.mapel == models.DaftarMapelSkolastik.kuantitatif
 
 def test_update_materi():
     instance_data = schema.Materi(
         id= 1,
         nama= 'Materi 1',
-        mapel= schema.DaftarMapelSkolastik.kuantitatif
+        mapel= models.DaftarMapelSkolastik.kuantitatif
     )
     response_data = schema.UpdateMateri(detail="Materi updated successfully.", instance=instance_data)
     assert response_data.detail == "Materi updated successfully."
@@ -205,11 +188,11 @@ def test_materi_dengan_daftar_video():
     materi_data = schema.Materi(
         id= 1,
         nama= 'Materi 1',
-        mapel= schema.DaftarMapelSkolastik.kuantitatif
+        mapel= models.DaftarMapelSkolastik.kuantitatif
     )
     video_metadata_list = [schema.video_metadata(id=1, time_created=datetime.now(), id_materi=1, s3_key="video1", creator_id=1, judul="Video 1", id_tugas=1)]
-    response_data = schema.MateriDenganDaftarVideo(id=1, nama="Materi 1", mapel=schema.DaftarMapelSkolastik.kuantitatif, video_pembelajaran=video_metadata_list)
+    response_data = schema.MateriDenganDaftarVideo(id=1, nama="Materi 1", mapel=models.DaftarMapelSkolastik.kuantitatif, video_pembelajaran=video_metadata_list)
     assert response_data.id == 1
     assert response_data.nama == "Materi 1"
-    assert response_data.mapel == schema.DaftarMapelSkolastik.kuantitatif
+    assert response_data.mapel == models.DaftarMapelSkolastik.kuantitatif
     assert response_data.video_pembelajaran == video_metadata_list

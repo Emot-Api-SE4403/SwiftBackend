@@ -302,7 +302,7 @@ async def read_video_pembelajaran(videoid:int, token_data: schema.TokenData = De
         download_url = crud.read_video_pembelajaran_download_url_by_id(db, videoid)
     except Exception as e:
         raise HTTPException(500, "Something went wrong (details:{})".format(str(e)))
-    return {"metadata":metadata, "download link":download_url}
+    return {"metadata":metadata, "download_link":download_url}
 
 @app.put("/video/update", response_model=schema.StandarResponse,
          responses={
@@ -724,7 +724,14 @@ async def delete_materi_menggunakan_id(id:int, token : schema.AdminTokenData=Dep
 @app.get("/materi/list", response_model=List[schema.MateriDenganDaftarVideo])
 async def read_daftar_materi(
         id_materi:Optional[int] = Query(None, description="id materi yang dicari"),
-        id_mapel:Optional[int] = Query(None, description="filter materi dengan id mapel"),
+        id_mapel:Optional[int] = Query(None, description="filter materi dengan id mapel", examples={
+            "kuantitatif": {"value": 1},
+            "penalaran_matematika": {"value": 2},
+            "literasi_inggris" : {"value": 3},
+            "literasi_indonesia" : {"value": 4},
+            "penalaran_umum" : {"value":5},
+            "membaca_dan_menulis" : {"value": 6}
+        }),
         nama_mapel:Optional[str] = Query(None, description="filter materi dengan nama mapel"),
         mapel:Optional[models.DaftarMapelSkolastik] = Query(None, description="filter materi dengan mapel"),
         limit: Optional[int] = Query(None, description="Limit the number of results"),
