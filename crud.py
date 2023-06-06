@@ -90,7 +90,7 @@ def read_user_mentor_by_id(db: Session, user_id: int):
     db_mentor.profile_picture = s3.generate_presigned_url(
         'get_object',
         Params = {'Bucket': 'swift-profile-picture', 'Key': db_mentor.profile_picture},
-        ExpiresIn = 86400
+        ExpiresIn = 604800
     )
     return db_mentor
 def create_user_pelajar(db: Session, user: schema.PelajarRegisterForm):
@@ -120,7 +120,7 @@ def read_user_pelajar_by_id(db: Session, user_id: int):
     db_pelajar.profile_picture = s3.generate_presigned_url(
         'get_object',
         Params = {'Bucket': 'swift-profile-picture', 'Key': db_pelajar.profile_picture},
-        ExpiresIn = 86400
+        ExpiresIn = 604800
     )
     return db_pelajar
 
@@ -150,6 +150,7 @@ def read_admin_by_id(db: Session, admin_id: str):
 
 
 def create_materi_pembelajaran(db:Session, mapel: Union[str, int, models.DaftarMapelSkolastik], nama_materi: str):
+    db.rollback()
     if isinstance(mapel, int):
         db_materi = models.Materi(
             nama = nama_materi,
@@ -267,6 +268,7 @@ def delete_video_pembelajaran_by_id(db:Session, video_id: int):
     return "ok"
 
 def create_tugas_pembelajaran(db:Session, judul, attempt:int, id_video:int):
+    db.rollback()
     # print("read video db")
     db_video = db.query(models.VideoPembelajaran).filter(models.VideoPembelajaran.id == id_video).one()
 
@@ -326,7 +328,7 @@ def create_soal_benar_salah(db:Session, pertanyaan, id_tugas, pernyataan_true, p
     return db_soal
 
 def create_jawaban_benar_salah(db:Session, id_soal, jawaban, pernyataan_yg_benar):
-    print("membuat jawaban benar salah")
+    # print("membuat jawaban benar salah")
     db_jawaban = models.JawabanBenarSalah(
         id_soal=id_soal,
         jawaban=jawaban,
@@ -335,7 +337,7 @@ def create_jawaban_benar_salah(db:Session, id_soal, jawaban, pernyataan_yg_benar
     db.add(db_jawaban)
     db.commit()
     db.refresh(db_jawaban)
-    print("selesai membuat jawaban benar salah")
+    # print("selesai membuat jawaban benar salah")
     return db_jawaban
 
 
@@ -521,3 +523,102 @@ def read_tugas_pembelajaran_filter_by(db:Session, newest: bool= True, **kwargs):
         query = query.limit(limit)
 
     return query.all()
+
+def read_user_pelajar_filter_by(db:Session, **kwargs):
+    limit = kwargs.get('limit', None)
+    page = kwargs.get('page', None)
+
+    query = db.query(models.Pelajar)
+
+    # Filter conditions based on provided parameters
+    for key, value in kwargs.items():
+        if value is not None:
+            if key == 'id_pelajar':
+                query = query.filter(models.Pelajar.id == value)
+            elif key == 'nama_lengkap':
+                query = query.filter(models.Pelajar.nama_lengkap == value)
+            elif key == 'time_created':
+                query = query.filter(models.Pelajar.time_created == value)
+            elif key == 'time_updated':
+                query = query.filter(models.Pelajar.time_updated == value)
+            elif key == 'is_active':
+                query = query.filter(models.Pelajar.is_active == value)
+            elif key == 'asal_sekolah':
+                query = query.filter(models.Pelajar.asal_sekolah == value)
+            elif key == 'jurusan':
+                query = query.filter(models.Pelajar.jurusan == value)
+            elif key == 'is_member':
+                query = query.filter(models.Pelajar.is_member == value)
+            
+
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+
+        query = query.limit(limit)
+
+    return query.all()
+
+def read_user_mentor_filter_by(db: Session, **kwargs) -> List[models.Mentor]:
+    limit = kwargs.get('limit', None)
+    page = kwargs.get('page', None)
+
+    query = db.query(models.Mentor)
+
+    # Filter conditions based on provided parameters
+    for key, value in kwargs.items():
+        if value is not None:
+            if key == 'id_mentor':
+                query = query.filter(models.Mentor.id == value)
+            elif key == 'nama_lengkap':
+                query = query.filter(models.Mentor.nama_lengkap == value)
+            elif key == 'time_created':
+                query = query.filter(models.Mentor.time_created == value)
+            elif key == 'time_updated':
+                query = query.filter(models.Mentor.time_updated == value)
+            elif key == 'is_active':
+                query = query.filter(models.Mentor.is_active == value)
+            elif key == 'keahlian':
+                query = query.filter(models.Mentor.keahlian == value)
+            elif key == 'asal':
+                query = query.filter(models.Mentor.Asal == value)
+
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+
+        query = query.limit(limit)
+
+    return query.all()
+
+def read_admin_filter_by(db: Session, **kwargs) -> List[models.Admin]:
+    limit = kwargs.get('limit', None)
+    page = kwargs.get('page', None)
+
+    query = db.query(models.Admin)
+
+    # Filter conditions based on provided parameters
+    for key, value in kwargs.items():
+        if value is not None:
+            if key == 'id':
+                query = query.filter(models.Admin.id == value)
+            elif key == 'nama_lengkap':
+                query = query.filter(models.Admin.nama_lengkap == value)
+            elif key == 'time_created':
+                query = query.filter(models.Admin.time_created == value)
+            elif key == 'time_updated':
+                query = query.filter(models.Admin.time_updated == value)
+            elif key == 'created_by':
+                query = query.filter(models.Admin.created_by == value)
+
+    if limit is not None:
+        if page is not None:
+            offset = (page - 1) * limit
+            query = query.offset(offset)
+
+        query = query.limit(limit)
+
+    return query.all()
+

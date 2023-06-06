@@ -1,6 +1,7 @@
 import json
-from typing import Union, Optional
+from typing import Union, Optional, List
 from urllib import response
+from datetime import datetime
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status, Query
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -62,7 +63,13 @@ async def login_for_access_token(form_data: schema.UserLoginForm, db: Session = 
     access_token = auth.create_access_token(data={"id": user.id})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/user/aktivasi")  
+@app.get("/user/aktivasi",
+        responses={
+            200: {"description": "HTML Response", "content": {"text/html": {}}},
+            400: {"description": "Bad Request"},
+            404: {"description": "Something went wrong"}
+        }
+        )  
 async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depends(get_db)):
     if(id==-1 or otp == "-1"):
         raise HTTPException(status_code=400, detail="Bad request")
@@ -72,7 +79,6 @@ async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depen
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Something went wrong",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     crud.update_user_is_active_by_id(db, id)
     response = ''' \
@@ -120,13 +126,18 @@ async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depen
         '''
     return HTMLResponse(content=response, status_code=201)
 
-@app.post("/user/resetpassword")
+@app.post("/user/resetpassword",
+          response_model=schema.StandarResponse,
+          responses={
+              404: {"description": "No email detected"},
+              400: {"description": "Something else went wrong"},
+          }
+          )
 async def permintaan_reset_password(email:str = "", db : Session = Depends(get_db)):
     if not email or email == "":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No email detected",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     try:
         crud.update_user_password_by_temp_password(db, email)
@@ -137,14 +148,17 @@ async def permintaan_reset_password(email:str = "", db : Session = Depends(get_d
             detail=str(e)
         )
 
-@app.post("/user/newpassword")
+@app.post("/user/newpassword", response_model=schema.StandarResponse,
+          responses={
+              401: {"description": "Incorrect username or password"},
+              401: {"description": "Inactive account"},
+          })
 async def ganti_password_baru(new_data:schema.UserNewPassword, db: Session = Depends(get_db)):
     user = auth.authenticate_user(db, new_data.email, new_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     if not user.is_active:
         raise HTTPException(
@@ -154,8 +168,20 @@ async def ganti_password_baru(new_data:schema.UserNewPassword, db: Session = Dep
     crud.update_user_password_by_email(db, user, new_data.new_password)
     return({"detail":"password changed"})
         
-@app.post("/mentor/updateprofilepicture")
-@app.post("/pelajar/updateprofilepicture")
+@app.post("/mentor/updateprofilepicture", response_model=schema.StandarResponse,
+          responses={
+              400: {"description": "File must be an image"},
+              401: {"description": "Could not validate credentials"},
+              400: {"description": "Ukuran file terlalu besar. Maksimal ukuran file adalah {} bytes".format(5 * 1024 * 1024)},
+              500: {"description": "Something went wrong, details: 'details of the error' "},
+          })
+@app.post("/pelajar/updateprofilepicture", response_model=schema.StandarResponse,
+          responses={
+              400: {"description": "File must be an image"},
+              401: {"description": "Could not validate credentials"},
+              400: {"description": "Ukuran file terlalu besar. Maksimal ukuran file adalah {} bytes".format(5 * 1024 * 1024)},
+              500: {"description": "Something went wrong, details: 'details of the error' "},
+          })
 async def update_profile_picture(
     file: UploadFile = File(...), 
     token_data:schema.TokenData = Depends(auth.get_token_data), 
@@ -178,7 +204,10 @@ async def update_profile_picture(
 
 
 
-@app.get("/pelajar/mydata", response_model=schema.Pelajar)
+@app.get("/pelajar/mydata", response_model=schema.Pelajar, responses={
+    401: {"description": "Could not validate credentials"},
+    401: {"description": "Invalid authentication credentials"},
+})
 async def read_users_pelajar(token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
     """
     kalo mau dipake harus tambahin header "Authorization" (tanpa tanda petik) 
@@ -189,7 +218,10 @@ async def read_users_pelajar(token_data: schema.TokenData = Depends(auth.get_tok
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     return current_user
 
-@app.get("/mentor/mydata", response_model=schema.Mentor)
+@app.get("/mentor/mydata", response_model=schema.Mentor, responses={
+    401: {"description": "Could not validate credentials"},
+    401: {"description": "Invalid authentication credentials"},
+})
 async def read_users_mentor(token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
     """
     kalo mau dipake harus tambahin header "Authorization" (tanpa tanda petik) 
@@ -200,7 +232,9 @@ async def read_users_mentor(token_data: schema.TokenData = Depends(auth.get_toke
         raise HTTPException(status_code=401, detail="Invalid authentication credentials")
     return current_user
 
-@app.post("/pelajar/register")
+@app.post("/pelajar/register", response_model=schema.StandarResponse, responses={
+    400: {"description": "user already exists"},
+})
 async def register_account_pelajar(register_form: schema.PelajarRegisterForm, db: Session = Depends(get_db)):
     """
     Membuat akun pelajar baru
@@ -211,7 +245,9 @@ async def register_account_pelajar(register_form: schema.PelajarRegisterForm, db
         raise HTTPException(status_code = 400, detail=  "user already exists")
     return {"detail":"ok"}
 
-@app.post("/mentor/register")
+@app.post("/mentor/register", response_model=schema.StandarResponse, responses={
+    400: {"description": "user already exists"},
+})
 async def register_account_mentor(register_form: schema.MentorRegisterForm, db: Session = Depends(get_db)):
     """
     Membuat akun mentor baru
@@ -223,7 +259,12 @@ async def register_account_mentor(register_form: schema.MentorRegisterForm, db: 
     return {"detail":"ok"}
 
 
-@app.post("/video/upload")
+@app.post("/video/upload", response_model=schema.StandarResponse, responses={
+    401: {"description": "Could not validate credentials"},
+    400: {"description": "File must be in MP4 format."},
+    400: {"description": "Ukuran file terlalu besar. Maksimal ukuran file adalah {} bytes".format(524288000)},
+    400: {"description": "Bad materi id"},
+})
 async def upload_video_materi_baru(
     token_data: schema.TokenData = Depends(auth.get_token_data), 
     file: UploadFile = File(...),
@@ -233,6 +274,7 @@ async def upload_video_materi_baru(
     
     # Check jika user adalah mentor
     auth.check_if_user_is_mentor(db, token_data.id)
+    db.rollback()
 
     # check jika video valid
     if not file.content_type.startswith('video/mp4'):
@@ -251,16 +293,26 @@ async def upload_video_materi_baru(
 
     return {"detail":"ok",}
 
-@app.get("/video/download")
+@app.get("/video/download", response_model=schema.download_video_response,
+         responses={
+             401: {"description": "Could not validate credentials"},
+             500: {"description": "Something went wrong (details: 'details of the error')"},
+         })
 async def read_video_pembelajaran(videoid:int, token_data: schema.TokenData = Depends(auth.get_token_data), db: Session = Depends(get_db)):
     try:
         metadata = crud.read_video_pembelajaran_metadata_by_id(db, videoid)
         download_url = crud.read_video_pembelajaran_download_url_by_id(db, videoid)
     except Exception as e:
         raise HTTPException(500, "Something went wrong (details:{})".format(str(e)))
-    return {"metadata":metadata, "download link":download_url}
+    return {"metadata":metadata, "download_link":download_url}
 
-@app.put("/video/update")
+@app.put("/video/update", response_model=schema.StandarResponse,
+         responses={
+             401: {"description": "Could not validate credentials"},
+             401: {"description": "akun tidak ditemukan"},
+             401: {"description": "bukan mentor"},
+             
+         })
 async def update_video_pembelajaran(
     video_id:int = Form(...),
     id_materi: int = Form(...),
@@ -269,19 +321,34 @@ async def update_video_pembelajaran(
     db: Session = Depends(get_db)):
 
     auth.check_if_user_is_mentor(db, token_data.id)
+    db.rollback()
     crud.update_video_pembelajaran_metadata_by_id(db, video_id, id_materi, judul_video)
+    return {"detail":"ok",}
+     
 
-@app.delete("/video/delete")
+@app.delete("/video/delete", response_model=schema.StandarResponse,
+         responses={
+             401: {"description": "Could not validate credentials"},
+             401: {"description": "akun tidak ditemukan"},
+             401: {"description": "bukan mentor"},
+             
+         })
 async def delete_video_pembelajaran(
     video_id:int = Form(...),
     token_data: schema.TokenData = Depends(auth.get_token_data), 
     db: Session = Depends(get_db)):
 
     auth.check_if_user_is_mentor(db, token_data.id)
+    db.rollback()
     crud.delete_video_pembelajaran_by_id(db, video_id)
+    return {"detail":"ok",}
 
 
-@app.post("/admin/register")
+@app.post("/admin/register", response_model=schema.StandarResponse,
+         responses={
+             400: {"description": "user already exist"},
+             
+         })
 async def register_account_admin(register_form: schema.AdminRegisterForm, db: Session =Depends(get_db), admin_token_data = Depends(auth.get_admin_token)):
     try:
         crud.create_new_admin(db, register_form, admin_token_data.id)
@@ -289,7 +356,9 @@ async def register_account_admin(register_form: schema.AdminRegisterForm, db: Se
         raise HTTPException(status_code = 400, detail=  "user already exists")
     return{"detail":"ok"}
 
-@app.post("/admin/login", response_model=schema.Token)
+@app.post("/admin/login", response_model=schema.Token, responses={
+    401: {"description": "Incorrect username or password"},
+})
 async def login_for_admin(form_data: schema.AdminLoginForm, db: Session = Depends(get_db)):
     admin = auth.admin_auth(db, form_data.id, form_data.password)
     #admin = crud.read_admin_by_id(db, form_data.id)
@@ -302,13 +371,21 @@ async def login_for_admin(form_data: schema.AdminLoginForm, db: Session = Depend
     access_token = auth.create_access_token(data={"id": admin.id})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/admin/mydata", response_model=schema.AdminData)
+@app.get("/admin/mydata", response_model=schema.AdminData, 
+         responses={
+             401: {"description": "Could not validate credentials"},
+         })
 async def read_users_admin(token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db: Session = Depends(get_db)):
     current_user = crud.read_admin_by_id(db, token_data.id)
     
     return current_user
 
-@app.patch("/admin/pelajar/updatemember")
+@app.patch("/admin/pelajar/updatemember",response_model=schema.StandarResponse,
+         responses={
+             401: {"description": "Could not validate credentials"},
+             404: {"description": "account not found"},
+             
+         })
 async def toggle_user_pelajar_is_member(pelajar: schema.UserBase, token_data: schema.AdminTokenData = Depends(auth.get_admin_token), db: Session = Depends(get_db)):
     try:
         crud.update_user_pelajar_toggle_is_member_by_email(db, pelajar.email)
@@ -321,10 +398,19 @@ async def toggle_user_pelajar_is_member(pelajar: schema.UserBase, token_data: sc
     return {"detail":"ok"}
 
     
-@app.post("/video/tugas/add")
+@app.post("/video/tugas/add", response_model=schema.tugas_pembelajaran_metadata, 
+          responses={
+              401: {"description": "Could not validate credentials"},
+              400: {"description": "Tugas sudah ada"},
+              400: {"description": "invalid video id"},
+              403: {"description": "creator id missmatch"},
+              
+          })
 async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,tokendata:schema.TokenData = Depends(auth.get_token_data), db= Depends(get_db)):
     try:
         auth.check_if_user_is_mentor(db, tokendata.id)
+        db.rollback()
+
 
         db_video = crud.read_video_pembelajaran_metadata_by_id(db, tugas_baru.id_video)
 
@@ -366,11 +452,21 @@ async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,token
         raise HTTPException(status_code=400, detail="Invalid video id")
     
 
-@app.delete("/video/tugas/delete")
+@app.delete("/video/tugas/delete", response_model=schema.StandarResponse,
+         responses={
+             401: {"description": "Could not validate credentials"},
+             403: {"description": "creator id missmatch"},
+             400: {"description": "Tidak ada tugas pada video ini"},
+             400: {"description": "invalid id"},
+
+             
+         })
 async def menghapus_tugas_yang_ada_pada_video(id_video:int = Form(...), token:schema.TokenData=Depends(auth.get_token_data), \
                                               db=Depends(get_db) ):
     try:
         auth.check_if_user_is_mentor(db, token.id)
+        db.rollback()
+
 
         db_video = crud.read_video_pembelajaran_metadata_by_id(db, id_video)
 
@@ -381,16 +477,18 @@ async def menghapus_tugas_yang_ada_pada_video(id_video:int = Form(...), token:sc
             raise HTTPException(status_code=400, detail="Tidak ada tugas pada video ini")
         crud.delete_attemp_pengerjaan_tugas_by_id_tugas(db, db_video.id_tugas)
         crud.delete_tugas_pembelajaran_by_id(db, db_video.id_tugas) 
-        return(f"Tugas berhasil dihapus")
+        return({"detail":f"Tugas berhasil dihapus"})
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Invalid id")
     
     
 @app.get("/video/tugas", response_model=schema.ReadTugasPembelajaran)
-async def mengakses_soal_yang_ada_pada_video(id_video:int = Form(...), \
+async def mengakses_soal_yang_ada_pada_video(id_video:int = Query(default=None, description="Id video dari tugas"), \
                                              token:schema.TokenData=Depends(auth.get_token_data), \
                                              db=Depends(get_db)):
     try:
+        if(id_video == None):
+            raise HTTPException(status_code=400, detail="Invalid id")
         db_video = crud.read_video_pembelajaran_metadata_by_id(db, id_video)
 
         if db_video.id_tugas == None:
@@ -433,12 +531,14 @@ async def mengakses_soal_yang_ada_pada_video(id_video:int = Form(...), \
         raise HTTPException(status_code=400, detail="Invalid id")
 
 
-@app.get("/video/tugas/edit")
+@app.get("/video/tugas/edit", response_model=schema.ReadTugasPembelajaran)
 async def lihat_soal_pada_video_untuk_mentor(id_video:int = Form(...), \
                                              token:schema.TokenData=Depends(auth.get_token_data), \
                                              db=Depends(get_db)):
     try:
         auth.check_if_user_is_mentor(db, token.id)
+        db.rollback()
+        
 
         db_video = crud.read_video_pembelajaran_metadata_by_id(db, id_video)
 
@@ -488,7 +588,7 @@ async def lihat_soal_pada_video_untuk_mentor(id_video:int = Form(...), \
     except NoResultFound:
         raise HTTPException(status_code=400, detail="Invalid id")
 
-@app.post("/video/tugas/kumpul")
+@app.post("/video/tugas/kumpul", response_model=schema.attempt_mengerjakan_tugas)
 async def kirim_jawaban_tugas(format_jawaban:schema.format_kirim_jawaban_tugas,\
                               token: schema.TokenData = Depends(auth.get_token_data),\
                               db:Session = Depends(get_db)):
@@ -540,7 +640,7 @@ async def kirim_jawaban_tugas(format_jawaban:schema.format_kirim_jawaban_tugas,\
     except NoResultFound:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid id")
     
-@app.get("/video/tugas/nilai")
+@app.get("/video/tugas/nilai", response_model=List[schema.attempt_mengerjakan_tugas])
 async def melihat_nilai_pelajar(id_pelajar:int = None, id_tugas:int = None, limit:int = None, page:int=None, \
         token:Union[schema.TokenData, schema.AdminTokenData]=Depends(auth.get_token_dynamic),db:Session = Depends(get_db) ):
     try:
@@ -549,7 +649,7 @@ async def melihat_nilai_pelajar(id_pelajar:int = None, id_tugas:int = None, limi
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
 
-@app.get("/video/list")
+@app.get("/video/list", response_model=List[schema.video_metadata])
 async def melihat_daftar_video_milik_mentor(
     id_mentor: Optional[int] = Query(None, description="ID mentor yang dicari"),
     id_tugas: Optional[int] = Query(None, description="ID tugas yang dicari"),
@@ -573,7 +673,7 @@ async def melihat_daftar_video_milik_mentor(
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
-@app.post("/materi/tambah")
+@app.post("/materi/tambah", response_model=schema.Materi)
 async def buat_materi_pembelajaran_baru(
         materi_baru: schema.schema_pembuatan_materi_pembelajaran_baru, 
         token: Union[schema.TokenData, schema.AdminTokenData] = Depends(auth.get_token_dynamic),
@@ -581,6 +681,8 @@ async def buat_materi_pembelajaran_baru(
         ):
     if isinstance(token, schema.TokenData):
         auth.check_if_user_is_mentor(db, token.id)
+        db.rollback()
+        
 
     if isinstance(materi_baru.mapel, int):
         if materi_baru.mapel > 6 or materi_baru.mapel < 1:
@@ -594,7 +696,7 @@ async def buat_materi_pembelajaran_baru(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Materi sudah ada")
     
 
-@app.put("/materi/admin/update") # <- update materi
+@app.put("/materi/admin/update", response_model=schema.UpdateMateri) # <- update materi
 async def update_materi(
     id: int,
     materi_baru: schema.schema_pembuatan_materi_pembelajaran_baru, 
@@ -623,20 +725,27 @@ async def update_materi(
         raise HTTPException(status_code=500, detail="Something else went wrong, see="+str(e))
     
 
-@app.delete("/materi/admin/delete") # <- delete materi
+@app.delete("/materi/admin/delete", response_model=schema.DeleteMateri) # <- delete materi
 async def delete_materi_menggunakan_id(id:int, token : schema.AdminTokenData=Depends(auth.get_admin_token), db=Depends(get_db) ):
     try:
         if crud.read_admin_by_id(db, token.id) is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user id")
 
-        return {"detail":"ok", "row deleted":crud.delete_materi_pembelajaran_by_id(db, id)}
+        return {"detail":"ok", "row_deleted":crud.delete_materi_pembelajaran_by_id(db, id)}
     except Exception as e:
         raise HTTPException(500, f"something went wrong, details: {str(e)}")
         
-@app.get("/materi/list")
+@app.get("/materi/list", response_model=List[schema.MateriDenganDaftarVideo])
 async def read_daftar_materi(
         id_materi:Optional[int] = Query(None, description="id materi yang dicari"),
-        id_mapel:Optional[int] = Query(None, description="filter materi dengan id mapel"),
+        id_mapel:Optional[int] = Query(None, description="filter materi dengan id mapel", examples={
+            "kuantitatif": {"value": 1},
+            "penalaran_matematika": {"value": 2},
+            "literasi_inggris" : {"value": 3},
+            "literasi_indonesia" : {"value": 4},
+            "penalaran_umum" : {"value":5},
+            "membaca_dan_menulis" : {"value": 6}
+        }),
         nama_mapel:Optional[str] = Query(None, description="filter materi dengan nama mapel"),
         mapel:Optional[models.DaftarMapelSkolastik] = Query(None, description="filter materi dengan mapel"),
         limit: Optional[int] = Query(None, description="Limit the number of results"),
@@ -657,7 +766,7 @@ async def read_daftar_materi(
     except Exception as e:
         raise HTTPException(500, f"something went wrong, details: {str(e)}")
     
-@app.get("/materi/tugas/list")
+@app.get("/materi/tugas/list", response_model=List[schema.tugas_pembelajaran_metadata])
 async def read_daftar_tugas(
         id_tugas:Optional[int] = Query(None, description="id materi yang dicari"), 
         newest:Optional[bool] = Query(True, description="mengurutkan dari yang terbaru"), 
@@ -686,3 +795,94 @@ async def read_daftar_tugas(
             )
     except Exception as e:
         raise HTTPException(500, f"something went wrong, details: {str(e)}")
+
+@app.get("/admin/pelajar/list", response_model=list[schema.Pelajar])
+async def lihat_semua_daftar_pelajar(
+    id_pelajar:Optional[int] = Query(None, description="filter dengan id pelajar"),
+    email:Optional[str] = Query(None, description="filter dengan email"),
+    nama_lengkap:Optional[str] = Query(None, description="filter dengan nama_lengkap"),
+    time_created:Optional[datetime] = Query(None, description="filter dengan time_created"),
+    time_updated:Optional[datetime] = Query(None, description="filter dengan time_updated"),
+    is_active:Optional[bool] = Query(None, description="filter dengan is_active"),
+    asal_sekolah:Optional[str] = Query(None, description="filter dengan asal_sekolah"),
+    jurusan:Optional[str] = Query(None, description="filter dengan jurusan"),
+    is_member:Optional[bool] = Query(None, description="filter dengan is_member"),
+    limit: Optional[int] = Query(None, description="Limit the number of results"),
+    page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+    _ = Depends(auth.get_admin_token), 
+    db=Depends(get_db)):
+
+    try:
+        return crud.read_user_pelajar_filter_by(
+            db,
+            id_pelajar=id_pelajar,
+            email=email,
+            nama_lengkap=nama_lengkap,
+            time_created=time_created,
+            time_updated=time_updated,
+            is_active=is_active,
+            asal_sekolah=asal_sekolah,
+            jurusan=jurusan,
+            is_member=is_member,
+            limit=limit,
+            page=page
+        )
+    except Exception as e:
+        raise HTTPException(500, detail=f'Unknown error, details: {str(e)}')
+    
+@app.get("/admin/mentor/list", response_model=list[schema.Mentor])
+async def lihat_semua_daftar_mentor(
+    id_mentor: Optional[int] = Query(None, description="Filter by mentor ID"),
+    nama_lengkap: Optional[str] = Query(None, description="Filter by full name"),
+    time_created: Optional[datetime] = Query(None, description="Filter by time created"),
+    time_updated: Optional[datetime] = Query(None, description="Filter by time updated"),
+    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    keahlian: Optional[str] = Query(None, description="Filter by expertise"),
+    asal: Optional[str] = Query(None, description="Filter by origin"),
+    limit: Optional[int] = Query(None, description="Limit the number of results"),
+    page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+    db: Session = Depends(get_db),
+    _ = Depends(auth.get_admin_token)
+):
+    try:
+        return crud.read_user_mentor_filter_by(
+            db,
+            id_mentor=id_mentor,
+            nama_lengkap=nama_lengkap,
+            time_created=time_created,
+            time_updated=time_updated,
+            is_active=is_active,
+            keahlian=keahlian,
+            asal=asal,
+            limit=limit,
+            page=page
+        )
+    except Exception as e:
+        raise HTTPException(500, detail=f'Unknown error, details: {str(e)}')
+
+
+@app.get("/admin/admin/list", response_model=list[schema.AdminData])
+async def lihat_semua_daftar_admin(
+    id_admin: Optional[int] = Query(None, description="Filter by admin ID"),
+    nama_lengkap: Optional[str] = Query(None, description="Filter by full name"),
+    time_created: Optional[datetime] = Query(None, description="Filter by time created"),
+    time_updated: Optional[datetime] = Query(None, description="Filter by time updated"),
+    created_by: Optional[str] = Query(None, description="Filter by creator"),
+    limit: Optional[int] = Query(None, description="Limit the number of results"),
+    page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+    db: Session = Depends(get_db),
+    _ = Depends(auth.get_admin_token)
+):
+    try:
+        return crud.read_admin_filter_by(
+            db,
+            id=id_admin,
+            nama_lengkap=nama_lengkap,
+            time_created=time_created,
+            time_updated=time_updated,
+            created_by=created_by,
+            limit=limit,
+            page=page
+        )
+    except Exception as e:
+        raise HTTPException(500, detail=f'Unknown error, details: {str(e)}')

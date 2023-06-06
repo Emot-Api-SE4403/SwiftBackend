@@ -1,14 +1,22 @@
 """
 Schema digunakan sebagai struktur data
 """
+from enum import Enum
 from typing import Optional, Union, List
 from datetime import datetime
 from pydantic import BaseModel
+import models
 
 
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class StandarResponse(BaseModel):
+    detail: str
+
+    class Config:
+        orm_mode = True
 
 class TokenData(BaseModel):
     id: int
@@ -145,7 +153,7 @@ class TugasPembelajaran(BaseModel):
 class ReadTugasPembelajaran(TugasPembelajaran):
     id: int
     time_created: datetime
-    time_updated: datetime
+    time_updated: Optional[datetime]
 
     class Config:
         orm_mode = True
@@ -161,3 +169,69 @@ class format_kirim_jawaban_tugas(BaseModel):
     waktu_mulai: datetime
     waktu_selesai: datetime
     jawaban: List[Union[List[str], str]]
+
+class video_metadata(BaseModel):
+    id: int
+    time_created: datetime
+    id_materi:int
+    s3_key: str
+    creator_id: int
+    judul: str
+    id_tugas: Optional[int]
+
+    class Config:
+        orm_mode = True
+
+class tugas_pembelajaran_metadata(BaseModel):
+    id: int
+    time_created: datetime
+    time_updated: Optional[datetime]
+    judul: str
+    attempt_allowed: int
+
+    class Config:
+        orm_mode = True
+
+class download_video_response(BaseModel):
+    metadata: video_metadata
+    download_link: str
+
+    class Config:
+        orm_mode = True
+
+class attempt_mengerjakan_tugas(BaseModel):
+    id: int
+    waktu_mulai: Optional[datetime]
+    waktu_selesai: Optional[datetime]
+    nilai: Optional[float]
+    id_pelajar: int
+    id_tugas: int
+
+    class Config:
+        orm_mode = True
+
+class Materi(BaseModel):
+    id: int
+    nama: str
+    mapel: models.DaftarMapelSkolastik
+
+    class Config:
+        orm_mode = True
+
+class UpdateMateri(StandarResponse):
+    instance: Materi
+
+    class Config:
+        orm_mode = True
+
+class DeleteMateri(StandarResponse):
+    row_deleted: int
+
+    class Config:
+        orm_mode = True
+
+class MateriDenganDaftarVideo(Materi):
+    video_pembelajaran: List[video_metadata]
+
+    class Config:
+        orm_mode = True
