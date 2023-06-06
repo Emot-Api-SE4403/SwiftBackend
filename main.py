@@ -1,6 +1,7 @@
 import json
 from typing import Union, Optional, List
 from urllib import response
+from datetime import datetime
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile, status, Query
 from fastapi.responses import RedirectResponse, HTMLResponse
@@ -273,6 +274,7 @@ async def upload_video_materi_baru(
     
     # Check jika user adalah mentor
     auth.check_if_user_is_mentor(db, token_data.id)
+    db.rollback()
 
     # check jika video valid
     if not file.content_type.startswith('video/mp4'):
@@ -319,6 +321,7 @@ async def update_video_pembelajaran(
     db: Session = Depends(get_db)):
 
     auth.check_if_user_is_mentor(db, token_data.id)
+    db.rollback()
     crud.update_video_pembelajaran_metadata_by_id(db, video_id, id_materi, judul_video)
     return {"detail":"ok",}
      
@@ -336,6 +339,7 @@ async def delete_video_pembelajaran(
     db: Session = Depends(get_db)):
 
     auth.check_if_user_is_mentor(db, token_data.id)
+    db.rollback()
     crud.delete_video_pembelajaran_by_id(db, video_id)
     return {"detail":"ok",}
 
@@ -405,6 +409,8 @@ async def toggle_user_pelajar_is_member(pelajar: schema.UserBase, token_data: sc
 async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,tokendata:schema.TokenData = Depends(auth.get_token_data), db= Depends(get_db)):
     try:
         auth.check_if_user_is_mentor(db, tokendata.id)
+        db.rollback()
+
 
         db_video = crud.read_video_pembelajaran_metadata_by_id(db, tugas_baru.id_video)
 
@@ -459,6 +465,8 @@ async def menghapus_tugas_yang_ada_pada_video(id_video:int = Form(...), token:sc
                                               db=Depends(get_db) ):
     try:
         auth.check_if_user_is_mentor(db, token.id)
+        db.rollback()
+
 
         db_video = crud.read_video_pembelajaran_metadata_by_id(db, id_video)
 
@@ -475,10 +483,12 @@ async def menghapus_tugas_yang_ada_pada_video(id_video:int = Form(...), token:sc
     
     
 @app.get("/video/tugas", response_model=schema.ReadTugasPembelajaran)
-async def mengakses_soal_yang_ada_pada_video(id_video:int = Form(...), \
+async def mengakses_soal_yang_ada_pada_video(id_video:int = Query(default=None, description="Id video dari tugas"), \
                                              token:schema.TokenData=Depends(auth.get_token_data), \
                                              db=Depends(get_db)):
     try:
+        if(id_video == None):
+            raise HTTPException(status_code=400, detail="Invalid id")
         db_video = crud.read_video_pembelajaran_metadata_by_id(db, id_video)
 
         if db_video.id_tugas == None:
@@ -527,6 +537,8 @@ async def lihat_soal_pada_video_untuk_mentor(id_video:int = Form(...), \
                                              db=Depends(get_db)):
     try:
         auth.check_if_user_is_mentor(db, token.id)
+        db.rollback()
+        
 
         db_video = crud.read_video_pembelajaran_metadata_by_id(db, id_video)
 
@@ -669,6 +681,8 @@ async def buat_materi_pembelajaran_baru(
         ):
     if isinstance(token, schema.TokenData):
         auth.check_if_user_is_mentor(db, token.id)
+        db.rollback()
+        
 
     if isinstance(materi_baru.mapel, int):
         if materi_baru.mapel > 6 or materi_baru.mapel < 1:
@@ -781,3 +795,94 @@ async def read_daftar_tugas(
             )
     except Exception as e:
         raise HTTPException(500, f"something went wrong, details: {str(e)}")
+
+@app.get("/admin/pelajar/list", response_model=list[schema.Pelajar])
+async def lihat_semua_daftar_pelajar(
+    id_pelajar:Optional[int] = Query(None, description="filter dengan id pelajar"),
+    email:Optional[str] = Query(None, description="filter dengan email"),
+    nama_lengkap:Optional[str] = Query(None, description="filter dengan nama_lengkap"),
+    time_created:Optional[datetime] = Query(None, description="filter dengan time_created"),
+    time_updated:Optional[datetime] = Query(None, description="filter dengan time_updated"),
+    is_active:Optional[bool] = Query(None, description="filter dengan is_active"),
+    asal_sekolah:Optional[str] = Query(None, description="filter dengan asal_sekolah"),
+    jurusan:Optional[str] = Query(None, description="filter dengan jurusan"),
+    is_member:Optional[bool] = Query(None, description="filter dengan is_member"),
+    limit: Optional[int] = Query(None, description="Limit the number of results"),
+    page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+    _ = Depends(auth.get_admin_token), 
+    db=Depends(get_db)):
+
+    try:
+        return crud.read_user_pelajar_filter_by(
+            db,
+            id_pelajar=id_pelajar,
+            email=email,
+            nama_lengkap=nama_lengkap,
+            time_created=time_created,
+            time_updated=time_updated,
+            is_active=is_active,
+            asal_sekolah=asal_sekolah,
+            jurusan=jurusan,
+            is_member=is_member,
+            limit=limit,
+            page=page
+        )
+    except Exception as e:
+        raise HTTPException(500, detail=f'Unknown error, details: {str(e)}')
+    
+@app.get("/admin/mentor/list", response_model=list[schema.Mentor])
+async def lihat_semua_daftar_mentor(
+    id_mentor: Optional[int] = Query(None, description="Filter by mentor ID"),
+    nama_lengkap: Optional[str] = Query(None, description="Filter by full name"),
+    time_created: Optional[datetime] = Query(None, description="Filter by time created"),
+    time_updated: Optional[datetime] = Query(None, description="Filter by time updated"),
+    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    keahlian: Optional[str] = Query(None, description="Filter by expertise"),
+    asal: Optional[str] = Query(None, description="Filter by origin"),
+    limit: Optional[int] = Query(None, description="Limit the number of results"),
+    page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+    db: Session = Depends(get_db),
+    _ = Depends(auth.get_admin_token)
+):
+    try:
+        return crud.read_user_mentor_filter_by(
+            db,
+            id_mentor=id_mentor,
+            nama_lengkap=nama_lengkap,
+            time_created=time_created,
+            time_updated=time_updated,
+            is_active=is_active,
+            keahlian=keahlian,
+            asal=asal,
+            limit=limit,
+            page=page
+        )
+    except Exception as e:
+        raise HTTPException(500, detail=f'Unknown error, details: {str(e)}')
+
+
+@app.get("/admin/admin/list", response_model=list[schema.AdminData])
+async def lihat_semua_daftar_admin(
+    id_admin: Optional[int] = Query(None, description="Filter by admin ID"),
+    nama_lengkap: Optional[str] = Query(None, description="Filter by full name"),
+    time_created: Optional[datetime] = Query(None, description="Filter by time created"),
+    time_updated: Optional[datetime] = Query(None, description="Filter by time updated"),
+    created_by: Optional[str] = Query(None, description="Filter by creator"),
+    limit: Optional[int] = Query(None, description="Limit the number of results"),
+    page: Optional[int] = Query(None, description="Page number for pagination when using limit"),
+    db: Session = Depends(get_db),
+    _ = Depends(auth.get_admin_token)
+):
+    try:
+        return crud.read_admin_filter_by(
+            db,
+            id=id_admin,
+            nama_lengkap=nama_lengkap,
+            time_created=time_created,
+            time_updated=time_updated,
+            created_by=created_by,
+            limit=limit,
+            page=page
+        )
+    except Exception as e:
+        raise HTTPException(500, detail=f'Unknown error, details: {str(e)}')

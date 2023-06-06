@@ -1,3 +1,4 @@
+from unittest import result
 import pytest
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -27,7 +28,10 @@ def test_verify_password_incorrect_password():
 def test_verify_password_invalid_hash():
     plain_password = "password123"
     invalid_hash = "$2b$12$rVInvalidsaltInvalidsaltInvalidsalt897u8341u767v.I3uu"
-    assert auth.verify_password(plain_password, invalid_hash) is False
+    with mock.patch('auth.pwd_context.verify') as mock_verify:
+        mock_verify.return_value = False
+        result = auth.verify_password(plain_password, invalid_hash)
+    assert result is False
 
 def test_check_for_valid_password_valid_password():
     valid_password = "password123"
@@ -111,6 +115,17 @@ async def test_get_token_data_invalid_token():
         await auth.get_token_data(invalid_token)
     assert exc_info.value.status_code == 401
 
+
+@pytest.mark.asyncio
+async def test_get_token_data_token_contain_none():
+    token = "test"
+    with pytest.raises(HTTPException) as exc_info:
+        with mock.patch('jose.jwt.decode') as payload:
+            payload.return_value.get.return_value = None
+            await auth.get_token_data(token)
+
+            assert exc_info.value.status_code == 401
+            assert str(exc_info.value) == "Could not validate credentials"
 
 def test_admin_auth_valid_credentials():
     id = "admin_id"
@@ -225,6 +240,17 @@ async def test_get_admin_token_invalid_token():
     assert str(exc.value.detail) == "Could not validate credentials"
 
 @pytest.mark.asyncio
+async def test_get_admin_token_contain_none():
+    token = "test"
+    with pytest.raises(HTTPException) as exc_info:
+        with mock.patch('jose.jwt.decode') as payload:
+            payload.return_value.get.return_value = None
+            await auth.get_admin_token(token)
+
+            assert exc_info.value.status_code == 401
+            assert str(exc_info.value) == "Could not validate credentials"
+
+@pytest.mark.asyncio
 async def test_get_token_dynamic():
     token_user = auth.create_access_token({"id":1})
     token_data = await auth.get_token_dynamic(token_user)
@@ -243,4 +269,12 @@ async def test_get_token_dynamic():
             await auth.get_token_dynamic(token_err)
 
         assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+
+    with pytest.raises(HTTPException) as exc_info:
+        with mock.patch('jose.jwt.decode') as payload:
+            payload.return_value.get.return_value = None
+            await auth.get_token_dynamic("test token")
+
+            assert exc_info.value.status_code == 401
+            assert str(exc_info.value) == "Could not validate credentials"
     

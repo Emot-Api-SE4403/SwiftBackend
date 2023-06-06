@@ -263,7 +263,7 @@ def test_read_user_mentor_by_id_with_mock():
         mock_generate_presigned_url.assert_called_once_with(
             'get_object',
             Params={'Bucket': 'swift-profile-picture', 'Key': "mentor_profile_picture.jpg"},
-            ExpiresIn=86400
+            ExpiresIn=604800
         )
 
         assert result == mentor
@@ -326,7 +326,7 @@ def test_read_user_pelajar_by_id_with_mock():
         mock_generate_presigned_url.assert_called_once_with(
             'get_object',
             Params={'Bucket': 'swift-profile-picture', 'Key': "profile_picture.jpg"},
-            ExpiresIn=86400
+            ExpiresIn=604800
         )
 
         assert result == pelajar
@@ -404,6 +404,7 @@ def test_create_materi_pembelajaran_with_mock():
     mapel_int = 1
     mapel_str = "kuantitatif"
     mapel = DaftarMapelSkolastik(1)
+    mapel_none = None
 
     # Create a test materi
     nama_materi = "Materi A"
@@ -437,6 +438,16 @@ def test_create_materi_pembelajaran_with_mock():
     session.add.assert_called_once()
     session.commit.assert_called_once()
     session.refresh.assert_called_once()
+
+    # Reset the mock session for the next test
+    session.reset_mock()
+    
+    # test case exception
+    with pytest.raises(Exception) as exc:
+        result_none = create_materi_pembelajaran(session, mapel_none, nama_materi)
+
+        assert str(exc.value) == "Unsupported type"
+
 
 def test_read_materi_pembelajaran_filter_by():
     db = MagicMock(spec=Session)
@@ -1181,3 +1192,319 @@ def test_read_tugas_pembelajaran_filter_by():
     assert len(result4) == 1
     assert result4[0].id == 2
     db.reset_mock()
+
+    # Test case 6 id_video
+    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
+    result6 = read_tugas_pembelajaran_filter_by(db, id_video=1)
+    assert len(result6) == 1
+    assert result6[0].id == 1
+    db.reset_mock()
+
+    # Test case 7 id_materi
+    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
+    result7 = read_tugas_pembelajaran_filter_by(db, id_materi=1)
+    assert len(result7) == 1
+    assert result7[0].id == 1
+    db.reset_mock()
+
+def test_read_user_pelajar_filter_by():
+    db = MagicMock()
+
+    # Create some test data
+    pelajar1 = MagicMock(spec=models.Pelajar)
+    pelajar1.id = 1
+    pelajar1.nama_lengkap = "John Doe"
+    pelajar1.time_created = datetime.datetime(2023, 5, 20, 10, 30, 0)
+    pelajar1.time_updated = datetime.datetime(2023, 5, 21, 15, 0, 0)
+    pelajar1.is_active = True
+    pelajar1.asal_sekolah = "ABC School"
+    pelajar1.jurusan = "Science"
+    pelajar1.is_member = True
+
+    pelajar2 = MagicMock(spec=models.Pelajar)
+    pelajar2.id = 2
+    pelajar2.nama_lengkap = "Jane Smith"
+    pelajar2.time_created = datetime.datetime(2023, 5, 19, 12, 0, 0)
+    pelajar2.time_updated = datetime.datetime(2023, 5, 22, 9, 30, 0)
+    pelajar2.is_active = False
+    pelajar2.asal_sekolah = "XYZ School"
+    pelajar2.jurusan = "Arts"
+    pelajar2.is_member = False
+
+    # Test case 1: Filter by id_pelajar
+    db.query.return_value.filter.return_value.all.return_value = [pelajar1]
+    result1 = read_user_pelajar_filter_by(db, id_pelajar=1)
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result1) == 1
+    assert result1[0].id == 1
+    db.reset_mock()
+
+    # Test case 2: Filter by nama_lengkap
+    db.query.return_value.filter.return_value.all.return_value = [pelajar1]
+    result2 = read_user_pelajar_filter_by(db, nama_lengkap="John Doe")
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result2) == 1
+    assert result2[0].id == 1
+    db.reset_mock()
+
+    # Test case 3: Filter by time_created
+    db.query.return_value.filter.return_value.all.return_value = [pelajar1]
+    result3 = read_user_pelajar_filter_by(db, time_created=datetime.datetime(2023, 5, 20, 10, 30, 0))
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result3) == 1
+    assert result3[0].id == 1
+    db.reset_mock()
+
+    # Test case 4: Filter by time_updated
+    db.query.return_value.filter.return_value.all.return_value = [pelajar1]
+    result4 = read_user_pelajar_filter_by(db, time_updated=datetime.datetime(2023, 5, 21, 15, 0, 0))
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result4) == 1
+    assert result4[0].id == 1
+    db.reset_mock()
+
+    # Test case 5: Filter by is_active
+    db.query.return_value.filter.return_value.all.return_value = [pelajar1]
+    result5 = read_user_pelajar_filter_by(db, is_active=True)
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result5) == 1
+    assert result5[0].id == 1
+    db.reset_mock()
+
+    # Test case 6: Filter by asal_sekolah
+    db.query.return_value.filter.return_value.all.return_value = [pelajar1]
+    result6 = read_user_pelajar_filter_by(db, asal_sekolah="ABC School")
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result6) == 1
+    assert result6[0].id == 1
+    db.reset_mock()
+
+    # Test case 7: Filter by jurusan
+    db.query.return_value.filter.return_value.all.return_value = [pelajar1]
+    result7 = read_user_pelajar_filter_by(db, jurusan="Science")
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result7) == 1
+    assert result7[0].id == 1
+    db.reset_mock()
+
+    # Test case 8: Filter by is_member
+    db.query.return_value.filter.return_value.all.return_value = [pelajar1]
+    result8 = read_user_pelajar_filter_by(db, is_member=True)
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result8) == 1
+    assert result8[0].id == 1
+    db.reset_mock()
+
+    # Test case 9: No filters
+    db.query.return_value.all.return_value = [pelajar1, pelajar2]
+    result9 = read_user_pelajar_filter_by(db)
+
+    db.query.return_value.all.assert_called_once()
+    assert len(result9) == 2
+    assert result9[0].id == 1
+    assert result9[1].id == 2
+    db.reset_mock()
+
+    # Test case 10: Pagination
+    db.query.return_value.offset.return_value.limit.return_value.all.return_value = [pelajar2]
+    result10 = read_user_pelajar_filter_by(db, limit=1, page=2)
+
+    db.query.return_value.offset.return_value.limit.return_value.all.assert_called_once()
+    assert len(result10) == 1
+    assert result10[0].id == 2
+    db.reset_mock()
+
+def test_read_user_mentor_filter_by():
+    db = MagicMock()
+
+    # Create some test data
+    mentor1 = MagicMock(spec=models.Mentor)
+    mentor1.id = 1
+    mentor1.nama_lengkap = "John Doe"
+    mentor1.time_created = datetime.datetime(2023, 5, 20, 10, 30, 0)
+    mentor1.time_updated = datetime.datetime(2023, 5, 21, 15, 0, 0)
+    mentor1.is_active = True
+    mentor1.keahlian = "Mathematics"
+    mentor1.asal = "ABC University"
+
+    mentor2 = MagicMock(spec=models.Mentor)
+    mentor2.id = 2
+    mentor2.nama_lengkap = "Jane Smith"
+    mentor2.time_created = datetime.datetime(2023, 5, 19, 12, 0, 0)
+    mentor2.time_updated = datetime.datetime(2023, 5, 22, 9, 30, 0)
+    mentor2.is_active = False
+    mentor2.keahlian = "Physics"
+    mentor2.asal = "XYZ University"
+
+    # Test case 1: Filter by id_mentor
+    db.query.return_value.filter.return_value.all.return_value = [mentor1]
+    result1 = read_user_mentor_filter_by(db, id_mentor=1)
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result1) == 1
+    assert result1[0].id == 1
+    db.reset_mock()
+
+    # Test case 2: Filter by nama_lengkap
+    db.query.return_value.filter.return_value.all.return_value = [mentor1]
+    result2 = read_user_mentor_filter_by(db, nama_lengkap="John Doe")
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result2) == 1
+    assert result2[0].id == 1
+    db.reset_mock()
+
+    # Test case 3: Filter by time_created
+    db.query.return_value.filter.return_value.all.return_value = [mentor1]
+    result3 = read_user_mentor_filter_by(db, time_created=datetime.datetime(2023, 5, 20, 10, 30, 0))
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result3) == 1
+    assert result3[0].id == 1
+    db.reset_mock()
+
+    # Test case 4: Filter by time_updated
+    db.query.return_value.filter.return_value.all.return_value = [mentor1]
+    result4 = read_user_mentor_filter_by(db, time_updated=datetime.datetime(2023, 5, 21, 15, 0, 0))
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result4) == 1
+    assert result4[0].id == 1
+    db.reset_mock()
+
+    # Test case 5: Filter by is_active
+    db.query.return_value.filter.return_value.all.return_value = [mentor1]
+    result5 = read_user_mentor_filter_by(db, is_active=True)
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result5) == 1
+    assert result5[0].id == 1
+    db.reset_mock()
+
+    # Test case 6: Filter by keahlian
+    db.query.return_value.filter.return_value.all.return_value = [mentor1]
+    result6 = read_user_mentor_filter_by(db, keahlian="Mathematics")
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result6) == 1
+    assert result6[0].id == 1
+    db.reset_mock()
+
+    # Test case 7: Filter by asal
+    db.query.return_value.filter.return_value.all.return_value = [mentor1]
+    result7 = read_user_mentor_filter_by(db, asal="ABC University")
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result7) == 1
+    assert result7[0].id == 1
+    db.reset_mock()
+
+    # Test case 8: No filters
+    db.query.return_value.all.return_value = [mentor1, mentor2]
+    result8 = read_user_mentor_filter_by(db)
+
+    db.query.return_value.all.assert_called_once()
+    assert len(result8) == 2
+    assert result8[0].id == 1
+    assert result8[1].id == 2
+    db.reset_mock()
+
+    # Test case 9: Pagination
+    db.query.return_value.offset.return_value.limit.return_value.all.return_value = [mentor2]
+    result9 = read_user_mentor_filter_by(db, limit=1, page=2)
+
+    db.query.return_value.offset.return_value.limit.return_value.all.assert_called_once()
+    assert len(result9) == 1
+    assert result9[0].id == 2
+    db.reset_mock()
+
+def test_read_admin_filter_by():
+    db = MagicMock()
+
+    # Create some test data
+    admin1 = MagicMock(spec=models.Admin)
+    admin1.id = 1
+    admin1.nama_lengkap = "John Doe"
+    admin1.time_created = datetime.datetime(2023, 5, 20, 10, 30, 0)
+    admin1.time_updated = datetime.datetime(2023, 5, 21, 15, 0, 0)
+    admin1.created_by = "admin"
+    
+    admin2 = MagicMock(spec=models.Admin)
+    admin2.id = 2
+    admin2.nama_lengkap = "Jane Smith"
+    admin2.time_created = datetime.datetime(2023, 5, 19, 12, 0, 0)
+    admin2.time_updated = datetime.datetime(2023, 5, 22, 9, 30, 0)
+    admin2.created_by = "superadmin"
+
+    # Test case 1: Filter by id
+    db.query.return_value.filter.return_value.all.return_value = [admin1]
+    result1 = read_admin_filter_by(db, id=1)
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result1) == 1
+    assert result1[0].id == 1
+    db.reset_mock()
+
+    # Test case 2: Filter by nama_lengkap
+    db.query.return_value.filter.return_value.all.return_value = [admin1]
+    result2 = read_admin_filter_by(db, nama_lengkap="John Doe")
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result2) == 1
+    assert result2[0].id == 1
+    db.reset_mock()
+
+    # Test case 3: Filter by time_created
+    db.query.return_value.filter.return_value.all.return_value = [admin1]
+    result3 = read_admin_filter_by(db, time_created=datetime.datetime(2023, 5, 20, 10, 30, 0))
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result3) == 1
+    assert result3[0].id == 1
+    db.reset_mock()
+
+    # Test case 4: Filter by time_updated
+    db.query.return_value.filter.return_value.all.return_value = [admin1]
+    result4 = read_admin_filter_by(db, time_updated=datetime.datetime(2023, 5, 21, 15, 0, 0))
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result4) == 1
+    assert result4[0].id == 1
+    db.reset_mock()
+
+    # Test case 5: Filter by created_by
+    db.query.return_value.filter.return_value.all.return_value = [admin1]
+    result5 = read_admin_filter_by(db, created_by="admin")
+
+    db.query.return_value.filter.return_value.all.assert_called_once()
+    assert len(result5) == 1
+    assert result5[0].id == 1
+    db.reset_mock()
+
+    # Test case 6: No filters
+    db.query.return_value.all.return_value = [admin1, admin2]
+    result6 = read_admin_filter_by(db)
+
+    db.query.return_value.all.assert_called_once()
+    assert len(result6) == 2
+    assert result6[0].id == 1
+    assert result6[1].id == 2
+    db.reset_mock()
+
+    # Test case 7: Pagination
+    db.query.return_value.offset.return_value.limit.return_value.all.return_value = [admin2]
+    result7 = read_admin_filter_by(db, limit=1, page=2)
+
+    db.query.return_value.offset.return_value.limit.return_value.all.assert_called_once()
+    assert len(result7) == 1
+    assert result7[0].id == 2
+    db.reset_mock()
+

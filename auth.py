@@ -134,7 +134,7 @@ async def get_token_dynamic(token: str = Depends(oauth2_scheme)) -> Union[schema
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         uid = payload.get("id")
 
-        if id is None:
+        if uid is None:
             raise credentials_exception
         
         try:
