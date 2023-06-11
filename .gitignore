@@ -16,8 +16,7 @@ Dockerfile
 # cloud services
 /.aws/
 .space
-Spacefile
-.spaceignore
+
 
 # test file
 .coverage
