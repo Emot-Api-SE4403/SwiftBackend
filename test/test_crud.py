@@ -1150,58 +1150,58 @@ def test_read_tugas_pembelajaran_filter_by():
     tugas2.time_created = datetime.datetime(2023, 5, 19, 15, 0, 0)
 
     # Test case 1: Filter by id_tugas
-    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
+    db.query.return_value.options.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
     result1 = read_tugas_pembelajaran_filter_by(db, id_tugas=1)
 
-    db.query.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
     assert len(result1) == 1
     assert result1[0].id == 1
     db.reset_mock()
 
     # Test case 2: Filter by judul and mapel
-    db.query.return_value.filter.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1, tugas2]
+    db.query.return_value.options.return_value.filter.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1, tugas2]
     result2 = read_tugas_pembelajaran_filter_by(db, newest=False, judul="Tugas 2", mapel="literasi_inggris")
-    db.query.return_value.filter.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.filter.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
     assert len(result2) == 2
     assert result2[0].id == 1
     assert result2[1].id == 2
     db.reset_mock()
 
     # Test case 3: Filter by creator id
-    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
+    db.query.return_value.options.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
     result1 = read_tugas_pembelajaran_filter_by(db, id_mentor=1)
 
-    db.query.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.filter.return_value.order_by.return_value.all.assert_called_once()
     assert len(result1) == 1
     assert result1[0].id == 1
     db.reset_mock()
 
     # Test case 4: No filters
-    db.query.return_value.order_by.return_value.all.return_value = [tugas1, tugas2]
+    db.query.return_value.options.return_value.order_by.return_value.all.return_value = [tugas1, tugas2]
     result3 = read_tugas_pembelajaran_filter_by(db)
-    db.query.return_value.order_by.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.order_by.return_value.all.assert_called_once()
     assert len(result3) == 2
     assert result3[0].id == 1
     assert result3[1].id == 2
     db.reset_mock()
 
     # Test case 5: Pagination
-    db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [tugas2]
+    db.query.return_value.options.return_value.order_by.return_value.offset.return_value.limit.return_value.all.return_value = [tugas2]
     result4 = read_tugas_pembelajaran_filter_by(db, newest=False, limit=1, page=2)
-    db.query.return_value.order_by.return_value.offset.return_value.limit.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.order_by.return_value.offset.return_value.limit.return_value.all.assert_called_once()
     assert len(result4) == 1
     assert result4[0].id == 2
     db.reset_mock()
 
     # Test case 6 id_video
-    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
+    db.query.return_value.options.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
     result6 = read_tugas_pembelajaran_filter_by(db, id_video=1)
     assert len(result6) == 1
     assert result6[0].id == 1
     db.reset_mock()
 
     # Test case 7 id_materi
-    db.query.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
+    db.query.return_value.options.return_value.filter.return_value.order_by.return_value.all.return_value = [tugas1]
     result7 = read_tugas_pembelajaran_filter_by(db, id_materi=1)
     assert len(result7) == 1
     assert result7[0].id == 1

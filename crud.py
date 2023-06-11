@@ -482,7 +482,7 @@ def read_tugas_pembelajaran_filter_by(db:Session, newest: bool= True, **kwargs):
     limit = kwargs.get('limit', None)
     page = kwargs.get('page', None)
 
-    query = db.query(models.TugasPembelajaran)
+    query = db.query(models.TugasPembelajaran).options(joinedload(models.TugasPembelajaran.video))
 
     # Filter conditions based on provided parameters
     for key, value in kwargs.items():

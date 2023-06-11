@@ -188,6 +188,7 @@ class tugas_pembelajaran_metadata(BaseModel):
     time_updated: Optional[datetime]
     judul: str
     attempt_allowed: int
+    video: video_metadata
 
     class Config:
         orm_mode = True
