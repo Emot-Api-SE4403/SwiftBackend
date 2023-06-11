@@ -1,0 +1,40 @@
+# Spacefile Docs: https://go.deta.dev/docs/spacefile/v0
+v: 0
+icon: test/static/play_store_512.png
+micros:
+  - name: fastapi
+    src: .
+    engine: python3.9
+    primary: true
+    run: uvicorn main:app
+    public_routes: ["/*"]
+    presets:
+      env:
+        - name: SECRET_KEY_AUTH
+          description: encription key
+          default: ""         
+        - name: S3_ACCESS_KEY
+          description: s3 secret access key
+          default: ""         
+        - name: S3_KEY_ID
+          description: id of your s3 key
+          default: ""         
+        - name: S3_URL
+          description: s3 url
+          default: ""         
+        - name: EMAIL_API_KEY_PUBLIC
+          description: api key email
+          default: ""         
+        - name: EMAIL_API_KEY_PRIVATE
+          description: api key email
+          default: ""         
+        - name: MY_EMAIL
+          description: email addr
+          default: "" 
+        - name: SQL_DATABASE_URL
+          description: db url
+          default: "mysql+pymysql://"
+        - name: DOMAIN
+          description: Your backend domain
+          default: "https://"
+        
