@@ -649,7 +649,7 @@ async def melihat_nilai_pelajar(id_pelajar:int = None, id_tugas:int = None, limi
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
     
 
-@app.get("/video/list", response_model=List[schema.video_metadata])
+@app.get("/video/list", response_model=List[schema.VideoDenganMateri])
 async def melihat_daftar_video_milik_mentor(
     id_mentor: Optional[int] = Query(None, description="ID mentor yang dicari"),
     id_tugas: Optional[int] = Query(None, description="ID tugas yang dicari"),
@@ -766,7 +766,7 @@ async def read_daftar_materi(
     except Exception as e:
         raise HTTPException(500, f"something went wrong, details: {str(e)}")
     
-@app.get("/materi/tugas/list", response_model=List[schema.tugas_pembelajaran_metadata])
+@app.get("/materi/tugas/list", response_model=List[schema.TugasDenganVideo])
 async def read_daftar_tugas(
         id_tugas:Optional[int] = Query(None, description="id materi yang dicari"), 
         newest:Optional[bool] = Query(True, description="mengurutkan dari yang terbaru"), 

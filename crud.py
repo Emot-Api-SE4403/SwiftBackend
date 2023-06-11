@@ -454,7 +454,7 @@ def read_all_video_pembelajaran(db: Session, **kwargs):
     limit = kwargs.get('limit', None)
     page = kwargs.get('page', None)
 
-    query = db.query(models.VideoPembelajaran)
+    query = db.query(models.VideoPembelajaran).options(joinedload(models.VideoPembelajaran.materi))
 
     # Filter conditions based on provided parameters
     for key, value in kwargs.items():
