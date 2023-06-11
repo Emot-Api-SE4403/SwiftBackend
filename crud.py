@@ -462,7 +462,7 @@ def read_all_video_pembelajaran(db: Session, **kwargs):
             if key == 'id_mentor':
                 query = query.filter(models.VideoPembelajaran.creator_id == value)
             elif key == 'judul':
-                query = query.filter(models.VideoPembelajaran.judul == value)
+                query = query.filter(models.VideoPembelajaran.judul.ilike(f"%{value}%"))
             elif key == 'id_materi':
                 query = query.filter(models.VideoPembelajaran.id_materi == value)
             elif key == 'id_tugas':
@@ -490,7 +490,7 @@ def read_tugas_pembelajaran_filter_by(db:Session, newest: bool= True, **kwargs):
             if key == 'id_tugas':
                 query = query.filter(models.TugasPembelajaran.id == value)
             elif key == 'judul':
-                query = query.filter(models.TugasPembelajaran.judul == value)
+                query = query.filter(models.TugasPembelajaran.judul.ilike(f"%{value}%"))
             elif key == 'id_video':
                 query = query.filter(models.TugasPembelajaran.video.has(models.VideoPembelajaran.id == value) )
             elif key == 'mapel':
