@@ -1068,10 +1068,10 @@ def test_read_all_video_pembelajaran():
     video3.id_tugas = 2
 
     # Test case 1: Filter by id_mentor
-    db.query.return_value.filter.return_value.all.return_value = [video1, video3]
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [video1, video3]
     result1 = read_all_video_pembelajaran(db, id_mentor=1)
 
-    db.query.return_value.filter.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.filter.return_value.all.assert_called_once()
     assert len(result1) == 2
     assert result1[0].id == 1
     assert result1[1].id == 3
@@ -1079,18 +1079,18 @@ def test_read_all_video_pembelajaran():
 
 
     # Test case 2: Filter by judul
-    db.query.return_value.filter.return_value.all.return_value = [video2]
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [video2]
     result2 = read_all_video_pembelajaran(db, judul="Video 2")
-    db.query.return_value.filter.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.filter.return_value.all.assert_called_once()
     assert len(result2) == 1
     assert result2[0].id == 2
     db.reset_mock()
 
 
     # Test case 3: Filter by id_materi
-    db.query.return_value.filter.return_value.all.return_value = [video1, video3]
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [video1, video3]
     result3 = read_all_video_pembelajaran(db, id_materi=1)
-    db.query.return_value.filter.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.filter.return_value.all.assert_called_once()
     assert len(result3) == 2
     assert result3[0].id == 1
     assert result3[1].id == 3
@@ -1098,28 +1098,28 @@ def test_read_all_video_pembelajaran():
 
 
     # Test case 4: Filter by id_tugas
-    db.query.return_value.filter.return_value.all.return_value = [video3]
+    db.query.return_value.options.return_value.filter.return_value.all.return_value = [video3]
     result4 = read_all_video_pembelajaran(db, id_tugas=2)
-    db.query.return_value.filter.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.filter.return_value.all.assert_called_once()
     assert len(result4) == 1
     assert result4[0].id == 3
     db.reset_mock()
 
 
     # Test case 5: No filters
-    db.query.return_value.all.return_value = [video1, video2, video3]
+    db.query.return_value.options.return_value.all.return_value = [video1, video2, video3]
     result5 = read_all_video_pembelajaran(db)
-    db.query.return_value.all.assert_called_once()
+    db.query.return_value.options.return_value.all.assert_called_once()
     db.query.return_value.filter.assert_not_called()
     assert len(result5) == 3
     db.reset_mock()
 
 
     # Test case 6: Pagination
-    db.query.return_value.offset.return_value\
+    db.query.return_value.options.return_value.offset.return_value\
         .limit.return_value.all.return_value = [video3]
     result6 = read_all_video_pembelajaran(db, limit=2, page=2)
-    db.query.return_value.offset.return_value\
+    db.query.return_value.options.return_value.offset.return_value\
         .limit.return_value.all.assert_called_once()
     db.query.return_value.filter.assert_not_called()
     assert len(result6) == 1

@@ -188,7 +188,7 @@ class tugas_pembelajaran_metadata(BaseModel):
     time_updated: Optional[datetime]
     judul: str
     attempt_allowed: int
-    video: video_metadata
+    
 
     class Config:
         orm_mode = True
@@ -236,3 +236,9 @@ class MateriDenganDaftarVideo(Materi):
 
     class Config:
         orm_mode = True
+
+class VideoDenganMateri(video_metadata):
+    materi: Materi
+
+class TugasDenganVideo(tugas_pembelajaran_metadata):
+    video: video_metadata
