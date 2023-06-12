@@ -1518,28 +1518,23 @@ def test_update_user_pelajar_data_by_id():
     pelajar.asal_sekolah = "ABC School"
     pelajar.email = "johndoe@example.com"
 
-    # Mock the read_user_pelajar_by_id function to return the mock pelajar object
-    read_user_pelajar_by_id = MagicMock()
-    read_user_pelajar_by_id.return_value = pelajar
-
-    # Mock the email_api.kirim_konfimasi_email function
+    # Mock the functions
     kirim_konfimasi_email = MagicMock()
+    db.query.return_value.filter.return_value.first.return_value = pelajar
 
     # Patch the email_api.kirim_konfimasi_email function
-    with patch('crud.read_user_pelajar_by_id', read_user_pelajar_by_id):  
-        with patch('email_api.kirim_konfimasi_email', kirim_konfimasi_email):
-            # Call the function with test data
-            result = update_user_pelajar_data_by_id(
-                db=db,
-                id=1,
-                nama_lengkap="Jane Smith",
-                jurusan="Arts",
-                asal_sekolah="XYZ School",
-                email="janesmith@example.com",
-            )
+    with patch('email_api.kirim_konfimasi_email', kirim_konfimasi_email):
+        # Call the function with test data
+        result = update_user_pelajar_data_by_id(
+            db=db,
+            id=1,
+            nama_lengkap="Jane Smith",
+            jurusan="Arts",
+            asal_sekolah="XYZ School",
+            email="janesmith@example.com",
+        )
 
     # Verify the function behavior
-    read_user_pelajar_by_id.assert_called_once_with(db, 1)
     assert pelajar.nama_lengkap == "Jane Smith"
     assert pelajar.jurusan == "Arts"
     assert pelajar.asal_sekolah == "XYZ School"
@@ -1563,28 +1558,23 @@ def test_update_user_mentor_data_by_id():
     mentor.Asal = "ABC School"
     mentor.email = "johndoe@example.com"
 
-    # Mock the read_user_mentor_by_id function to return the mock mentor object
-    read_user_mentor_by_id = MagicMock()
-    read_user_mentor_by_id.return_value = mentor
-
-    # Mock the email_api.kirim_konfimasi_email function
+    # Mock the functions
     kirim_konfimasi_email = MagicMock()
+    db.query.return_value.filter.return_value.first.return_value = mentor
 
     # Patch the email_api.kirim_konfimasi_email function
-    with patch('crud.read_user_mentor_by_id', read_user_mentor_by_id):  
-        with patch('email_api.kirim_konfimasi_email', kirim_konfimasi_email):
-            # Call the function with test data
-            result = update_user_mentor_data_by_id(
-                db=db,
-                id=1,
-                nama_lengkap="Jane Smith",
-                keahlian="Arts",
-                Asal="XYZ School",
-                email="janesmith@example.com",
-            )
+    with patch('email_api.kirim_konfimasi_email', kirim_konfimasi_email):
+        # Call the function with test data
+        result = update_user_mentor_data_by_id(
+            db=db,
+            id=1,
+            nama_lengkap="Jane Smith",
+            keahlian="Arts",
+            Asal="XYZ School",
+            email="janesmith@example.com",
+        )
 
     # Verify the function behavior
-    read_user_mentor_by_id.assert_called_once_with(db, 1)
     assert mentor.nama_lengkap == "Jane Smith"
     assert mentor.keahlian == "Arts"
     assert mentor.Asal == "XYZ School"
