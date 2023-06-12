@@ -132,7 +132,7 @@ def update_user_pelajar_toggle_is_member_by_email(db: Session, user_email: str):
     return "success"
 
 def update_user_pelajar_data_by_id(db:Session, id: int, **kwargs):
-    pelajar = read_user_pelajar_by_id(db, id)
+    pelajar = db.query(models.Pelajar).filter(models.Pelajar.id == id).first()
     
     
     if (kwargs.get('nama_lengkap') != None):
@@ -154,7 +154,7 @@ def update_user_pelajar_data_by_id(db:Session, id: int, **kwargs):
     return pelajar
 
 def update_user_mentor_data_by_id(db:Session, id: int, **kwargs):
-    mentor = read_user_mentor_by_id(db, id)
+    mentor = db.query(models.Mentor).filter(models.Mentor.id == id).first()
     
     if (kwargs.get('nama_lengkap') != None):
         mentor.nama_lengkap = kwargs.get('nama_lengkap')

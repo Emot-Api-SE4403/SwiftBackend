@@ -209,9 +209,11 @@ async def update_data_pelajar(
         jurusan:Optional[str] = Form(None, description="jurusan yang baru"),
         asalSekolah:Optional[str] = Form(None, description="asal sekolah yang baru"),
         token_data:schema.TokenData = Depends(auth.get_token_data),
-        db = Depends(get_db)
+        db:Session = Depends(get_db)
     ):
     user = crud.read_user_pelajar_by_id(db, token_data.id)
+    db.rollback()
+    db.refresh(user)
 
     if user == None:
          HTTPException(status_code=401, detail="Invalid authentication credentials")
@@ -237,9 +239,11 @@ async def update_data_pelajar(
         keahlian:Optional[str] = Form(None, description="keahlian yang baru"),
         asal:Optional[str] = Form(None, description="asal instansi yang baru"),
         token_data:schema.TokenData = Depends(auth.get_token_data),
-        db = Depends(get_db)
+        db:Session = Depends(get_db)
     ):
     user = crud.read_user_mentor_by_id(db, token_data.id)
+    db.rollback()
+    db.refresh(user)
 
     if user == None:
          HTTPException(status_code=401, detail="Invalid authentication credentials")
