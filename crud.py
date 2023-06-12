@@ -20,9 +20,9 @@ def read_user_by_email(db: Session, email:str):
 def read_user_by_id_filter_activation_code(db: Session, id, code):
     return db.query(models.User).filter(models.User.id == id, models.User.activation_code == code).one()
 
-def update_user_is_active_by_id(db: Session, id):
+def update_user_is_active_by_id(db: Session, id, status:bool):
     db_user = db.query(models.User).filter(models.User.id == id).one()
-    db_user.is_active = True
+    db_user.is_active = status
     db_user.time_updated = datetime.datetime.now()
     db.add(db_user)
     db.commit()
@@ -80,7 +80,6 @@ def create_user_mentor(db: Session, user: schema.MentorRegisterForm):
     db.refresh(db_mentor)
 
     activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(db_mentor.id) + "&otp=" + activation_code
-    # TODO Send mail with verification code
     email_api.kirim_konfimasi_email(user.email, user.nama_lengkap, activation_string)
     # print(activation_string)
     return "done"
@@ -131,6 +130,52 @@ def update_user_pelajar_toggle_is_member_by_email(db: Session, user_email: str):
     db.add(db_pelajar)
     db.commit()
     return "success"
+
+def update_user_pelajar_data_by_id(db:Session, id: int, **kwargs):
+    pelajar = read_user_pelajar_by_id(db, id)
+    
+    
+    if (kwargs.get('nama_lengkap') != None):
+        pelajar.nama_lengkap = kwargs.get('nama_lengkap')
+    if (kwargs.get('jurusan') != None):
+        pelajar.jurusan = kwargs.get('jurusan')
+    if (kwargs.get('asal_sekolah') != None):
+        pelajar.asal_sekolah = kwargs.get('asal_sekolah')
+    if (kwargs.get('email') != None):
+        pelajar.email = kwargs.get('email')
+        activation_code = secrets.token_urlsafe(4)
+        pelajar.activation_code = activation_code
+        activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(pelajar.id) + "&otp=" + activation_code
+        email_api.kirim_konfimasi_email(pelajar.email, pelajar.nama_lengkap, activation_string)
+
+    pelajar.time_updated = datetime.datetime.now()
+    db.commit()
+    db.refresh(pelajar)
+    return pelajar
+
+def update_user_mentor_data_by_id(db:Session, id: int, **kwargs):
+    mentor = read_user_mentor_by_id(db, id)
+    
+    if (kwargs.get('nama_lengkap') != None):
+        mentor.nama_lengkap = kwargs.get('nama_lengkap')
+    if (kwargs.get('keahlian') != None):
+        mentor.keahlian = kwargs.get('keahlian')
+    if (kwargs.get('Asal') != None):
+        mentor.Asal = kwargs.get('Asal')
+    if (kwargs.get('email') != None):
+        mentor.email = kwargs.get('email')
+        activation_code = secrets.token_urlsafe(4)
+        mentor.activation_code = activation_code
+        activation_string = DOMAIN_URL + "/user/aktivasi?id=" + str(mentor.id) + "&otp=" + activation_code
+        email_api.kirim_konfimasi_email(mentor.email, mentor.nama_lengkap, activation_string)
+
+    mentor.time_updated = datetime.datetime.now()
+    db.commit()
+    db.refresh(mentor)
+    return mentor
+
+
+
 
 def create_new_admin(db: Session, user: schema.AdminRegisterForm, parent: str):
     hashed_password = auth.get_password_hash(user.new_password)
