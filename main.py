@@ -80,7 +80,7 @@ async def activate_user_account(id:int = -1, otp:str = "-1", db: Session = Depen
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Something went wrong",
         )
-    crud.update_user_is_active_by_id(db, id)
+    crud.update_user_is_active_by_id(db, id, True)
     response = ''' \
 <!DOCTYPE html>
 <html>
@@ -202,6 +202,61 @@ async def update_profile_picture(
         'detail':'ok'
     }
 
+@app.post("/pelajar/updatedata", response_model=schema.StandarResponse)
+async def update_data_pelajar(
+        namaLengkap:Optional[str] = Form(None, description="Nama yang baru"),
+        email:Optional[str] = Form(None, description="email yang baru"),
+        jurusan:Optional[str] = Form(None, description="jurusan yang baru"),
+        asalSekolah:Optional[str] = Form(None, description="asal sekolah yang baru"),
+        token_data:schema.TokenData = Depends(auth.get_token_data),
+        db = Depends(get_db)
+    ):
+    user = crud.read_user_pelajar_by_id(db, token_data.id)
+
+    if user == None:
+         HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    if (email != None):
+        crud.update_user_is_active_by_id(db, user.id, False)
+
+    crud.update_user_pelajar_data_by_id(
+        db,
+        token_data.id,
+        nama_lengkap = namaLengkap,
+        email=email,
+        jurusan = jurusan,
+        asal_sekolah = asalSekolah
+    )
+
+    return {"detail": "Berhasil diupdate"}
+
+@app.post("/mentor/updatedata", response_model=schema.StandarResponse)
+async def update_data_pelajar(
+        namaLengkap:Optional[str] = Form(None, description="Nama yang baru"),
+        email:Optional[str] = Form(None, description="email yang baru"),
+        keahlian:Optional[str] = Form(None, description="keahlian yang baru"),
+        asal:Optional[str] = Form(None, description="asal instansi yang baru"),
+        token_data:schema.TokenData = Depends(auth.get_token_data),
+        db = Depends(get_db)
+    ):
+    user = crud.read_user_mentor_by_id(db, token_data.id)
+
+    if user == None:
+         HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+    if (email != None):
+        crud.update_user_is_active_by_id(db, user.id, False)
+
+    crud.update_user_mentor_data_by_id(
+        db,
+        token_data.id,
+        nama_lengkap = namaLengkap,
+        email=email,
+        keahlian=keahlian,
+        Asal=asal
+    )
+
+    return {"detail": "Berhasil diupdate"}
 
 
 @app.get("/pelajar/mydata", response_model=schema.Pelajar, responses={

@@ -90,7 +90,7 @@ def test_update_user_is_active_by_id_with_mock():
     session.query.return_value.filter.return_value.one.return_value = user
 
     # Call the function being tested
-    result = update_user_is_active_by_id(session, 1)
+    result = update_user_is_active_by_id(session, 1, True)
 
     # Assertions
     session.query.return_value.filter.return_value.one.assert_called_once()
@@ -1508,3 +1508,92 @@ def test_read_admin_filter_by():
     assert result7[0].id == 2
     db.reset_mock()
 
+def test_update_user_pelajar_data_by_id():
+    db = MagicMock()
+    # Create a mock pelajar object
+    pelajar = MagicMock()
+    pelajar.id = 1
+    pelajar.nama_lengkap = "John Doe"
+    pelajar.jurusan = "Science"
+    pelajar.asal_sekolah = "ABC School"
+    pelajar.email = "johndoe@example.com"
+
+    # Mock the read_user_pelajar_by_id function to return the mock pelajar object
+    read_user_pelajar_by_id = MagicMock()
+    read_user_pelajar_by_id.return_value = pelajar
+
+    # Mock the email_api.kirim_konfimasi_email function
+    kirim_konfimasi_email = MagicMock()
+
+    # Patch the email_api.kirim_konfimasi_email function
+    with patch('crud.read_user_pelajar_by_id', read_user_pelajar_by_id):  
+        with patch('email_api.kirim_konfimasi_email', kirim_konfimasi_email):
+            # Call the function with test data
+            result = update_user_pelajar_data_by_id(
+                db=db,
+                id=1,
+                nama_lengkap="Jane Smith",
+                jurusan="Arts",
+                asal_sekolah="XYZ School",
+                email="janesmith@example.com",
+            )
+
+    # Verify the function behavior
+    read_user_pelajar_by_id.assert_called_once_with(db, 1)
+    assert pelajar.nama_lengkap == "Jane Smith"
+    assert pelajar.jurusan == "Arts"
+    assert pelajar.asal_sekolah == "XYZ School"
+    assert pelajar.email == "janesmith@example.com"
+    db.commit.assert_called_once()
+    db.refresh.assert_called_once_with(pelajar)
+    kirim_konfimasi_email.assert_called_once_with(
+        "janesmith@example.com",
+        pelajar.nama_lengkap,
+        DOMAIN_URL + "/user/aktivasi?id=1&otp=" + pelajar.activation_code,
+    )
+    assert result == pelajar
+
+def test_update_user_mentor_data_by_id():
+    db = MagicMock()
+    # Create a mock pelajar object
+    mentor = MagicMock()
+    mentor.id = 1
+    mentor.nama_lengkap = "John Doe"
+    mentor.keahlian = "Science"
+    mentor.Asal = "ABC School"
+    mentor.email = "johndoe@example.com"
+
+    # Mock the read_user_mentor_by_id function to return the mock mentor object
+    read_user_mentor_by_id = MagicMock()
+    read_user_mentor_by_id.return_value = mentor
+
+    # Mock the email_api.kirim_konfimasi_email function
+    kirim_konfimasi_email = MagicMock()
+
+    # Patch the email_api.kirim_konfimasi_email function
+    with patch('crud.read_user_mentor_by_id', read_user_mentor_by_id):  
+        with patch('email_api.kirim_konfimasi_email', kirim_konfimasi_email):
+            # Call the function with test data
+            result = update_user_mentor_data_by_id(
+                db=db,
+                id=1,
+                nama_lengkap="Jane Smith",
+                keahlian="Arts",
+                Asal="XYZ School",
+                email="janesmith@example.com",
+            )
+
+    # Verify the function behavior
+    read_user_mentor_by_id.assert_called_once_with(db, 1)
+    assert mentor.nama_lengkap == "Jane Smith"
+    assert mentor.keahlian == "Arts"
+    assert mentor.Asal == "XYZ School"
+    assert mentor.email == "janesmith@example.com"
+    db.commit.assert_called_once()
+    db.refresh.assert_called_once_with(mentor)
+    kirim_konfimasi_email.assert_called_once_with(
+        "janesmith@example.com",
+        mentor.nama_lengkap,
+        DOMAIN_URL + "/user/aktivasi?id=1&otp=" + mentor.activation_code,
+    )
+    assert result == mentor
