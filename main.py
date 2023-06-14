@@ -486,11 +486,10 @@ async def tambah_tugas_ke_video(tugas_baru: schema.TambahTugasPembelajaran,token
         for soal in tugas_baru.daftar_soal:
             if isinstance(soal, schema.SoalABCKunci):
                 db_soal = crud.create_soal_abc(db, soal.pertanyaan, db_tugas.id)
+                crud.update_soal_abc_add_kunci_by_ids(db, db_soal.id, soal.index_jawaban_benar)
                 for i in range(len(soal.pilihan_jawaban)):
                     string_jawaban=soal.pilihan_jawaban[i]
                     jawaban = crud.create_jawaban_abc(db, db_soal.id, string_jawaban)
-                    if soal.index_jawaban_benar == i:
-                        db_soal = crud.update_soal_abc_add_kunci_by_ids(db, db_soal.id, jawaban.id)
             elif isinstance(soal, schema.SoalBenarSalah):
                 db_soal = crud.create_soal_benar_salah(db, soal.pertanyaan, db_tugas.id,\
                                                        soal.pernyataan_pada_benar, \
